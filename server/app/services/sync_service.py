@@ -29,6 +29,48 @@ async def _rollback_match_points(db: AsyncIOMotorDatabase, match_id) -> None:
             )
 
 
+# Match fields the test override mutates; snapshotted so they can be restored.
+_OVERRIDE_FIELDS = ("status", "home_score", "away_score", "kickoff")
+
+
+async def _snapshot_original(db: AsyncIOMotorDatabase, match: dict) -> None:
+    """Save a match's real values once, before the override first mutates it."""
+    if match.get("test_override"):
+        return  # already snapshotted on a previous sync
+    original = {k: match.get(k) for k in _OVERRIDE_FIELDS}
+    await db.matches.update_one(
+        {"_id": match["_id"]},
+        {"$set": {"test_override": True, "test_override_original": original}},
+    )
+
+
+async def _clear_test_override(db: AsyncIOMotorDatabase) -> None:
+    """Revert every match the override touched back to its real values.
+
+    Restores the snapshotted status/score/kickoff, rolls back any points that
+    were awarded off a forced result, and removes the override bookkeeping
+    fields. Runs whenever TEST_FORCE_MATCH_RESULT is false.
+    """
+    now = datetime.now(timezone.utc)
+    async for match in db.matches.find({"test_override": True}):
+        original = match.get("test_override_original") or {}
+        restore = {k: original[k] for k in _OVERRIDE_FIELDS if k in original}
+        # Undo points awarded while the match was force-finished.
+        await _rollback_match_points(db, match["_id"])
+        await db.matches.update_one(
+            {"_id": match["_id"]},
+            {
+                "$set": {**restore, "updated_at": now},
+                "$unset": {"test_override": "", "test_override_original": ""},
+            },
+        )
+        logger.warning(
+            "TEST override cleared: restored %s vs %s",
+            match.get("home_team"),
+            match.get("away_team"),
+        )
+
+
 async def _apply_test_override(db: AsyncIOMotorDatabase) -> None:
     """TEST ONLY: stub the three earliest matches into finished + locked + live.
 
@@ -40,10 +82,11 @@ async def _apply_test_override(db: AsyncIOMotorDatabase) -> None:
       - 3rd match  -> LIVE 2-0, kickoff 30 min ago (in progress, not scored).
 
     Runs on every sync, directly in the DB and independent of the external API.
-    Set the env flag to false to restore live API results (the next sync
-    overwrites the stub).
+    The real values are snapshotted on first apply, so setting the env flag to
+    false fully restores them (see _clear_test_override).
     """
     if not settings.test_force_match_result:
+        await _clear_test_override(db)
         return
     docs = [m async for m in db.matches.find().sort("kickoff", 1).limit(3)]
     if not docs:
@@ -52,6 +95,7 @@ async def _apply_test_override(db: AsyncIOMotorDatabase) -> None:
     now = datetime.now(timezone.utc)
 
     finished = docs[0]
+    await _snapshot_original(db, finished)
     await db.matches.update_one(
         {"_id": finished["_id"]},
         {
@@ -72,6 +116,7 @@ async def _apply_test_override(db: AsyncIOMotorDatabase) -> None:
 
     if len(docs) > 1:
         locked = docs[1]
+        await _snapshot_original(db, locked)
         await db.matches.update_one(
             {"_id": locked["_id"]},
             {
@@ -93,6 +138,7 @@ async def _apply_test_override(db: AsyncIOMotorDatabase) -> None:
 
     if len(docs) > 2:
         live = docs[2]
+        await _snapshot_original(db, live)
         await db.matches.update_one(
             {"_id": live["_id"]},
             {

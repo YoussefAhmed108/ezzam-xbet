@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
-from .db import close_mongo_connection, connect_to_mongo
+from .db import close_mongo_connection, connect_to_mongo, get_db
 from .routers import admin, auth, groups, matches, predictions
 from .scheduler import start_scheduler, stop_scheduler
 
@@ -40,6 +40,18 @@ app.add_middleware(
 @app.get("/health", tags=["health"])
 async def health():
     return {"status": "ok"}
+
+
+@app.get("/hc", tags=["health"])
+async def health_check():
+    """Health check that also verifies database connectivity."""
+    db_ok = False
+    try:
+        await get_db().command("ping")
+        db_ok = True
+    except Exception:  # noqa: BLE001 - report unhealthy DB instead of crashing
+        db_ok = False
+    return {"status": "ok" if db_ok else "degraded", "database": "up" if db_ok else "down"}
 
 
 app.include_router(auth.router)
