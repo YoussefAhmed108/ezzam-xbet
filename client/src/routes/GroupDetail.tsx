@@ -15,8 +15,44 @@ import {
 } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import type { GroupMember, Match, MatchPredictions } from "../lib/types";
+import { Avatar, FlagBadge } from "../components/ui";
 
 const columnHelper = createColumnHelper<GroupMember>();
+
+function FilterChip({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "7px 14px",
+        borderRadius: 999,
+        border: active ? "none" : "1px solid var(--line)",
+        background: active ? "var(--primary)" : "var(--surface2)",
+        color: active ? "#fff" : "var(--muted)",
+        fontSize: 13,
+        fontWeight: 700,
+        fontFamily: "var(--font-display)",
+        cursor: "pointer",
+        transition: "all 0.15s",
+        whiteSpace: "nowrap" as const,
+        boxShadow: active
+          ? "0 4px 14px color-mix(in oklab, var(--primary) 40%, transparent)"
+          : undefined,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
 
 export default function GroupDetail() {
   const { groupId } = useParams({ from: "/_authenticated/groups/$groupId" });
@@ -37,23 +73,76 @@ export default function GroupDetail() {
         header: "#",
         cell: (info) => {
           const rank = info.getValue();
+          const medals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
           return (
-            <span className={`rank-cell ${rank === 1 ? "rank-1" : ""}`}>
-              {rank === 1 ? "🏆" : rank}
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                color: rank === 1 ? "var(--yellow)" : "var(--muted)",
+                fontSize: 15,
+              }}
+            >
+              {medals[rank] ?? rank}
             </span>
           );
         },
       }),
       columnHelper.accessor("nickname", {
         header: "Player",
-        cell: (info) => <strong>{info.getValue()}</strong>,
+        cell: (info) => {
+          const nickname = info.getValue();
+          const isMe = info.row.original.user_id === user?.id;
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <Avatar nickname={nickname} size={28} you={isMe} />
+              <strong
+                style={{
+                  fontFamily: "var(--font-display)",
+                  fontWeight: 700,
+                  fontSize: 14,
+                }}
+              >
+                {nickname}
+              </strong>
+              {isMe && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    color: "var(--primary)",
+                    background: "color-mix(in oklab, var(--primary) 14%, transparent)",
+                    padding: "1px 7px",
+                    borderRadius: 999,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.04em",
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  You
+                </span>
+              )}
+            </div>
+          );
+        },
       }),
       columnHelper.accessor("points", {
-        header: scoreMode === "live" ? "Live points" : "Points",
-        cell: (info) => info.getValue(),
+        header: scoreMode === "live" ? "Live pts" : "Points",
+        cell: (info) => (
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 16,
+              color: "var(--text)",
+            }}
+          >
+            {info.getValue()}
+          </span>
+        ),
       }),
     ],
-    [scoreMode],
+    [scoreMode, user?.id],
   );
 
   const rawMembers = groupQuery.data?.members ?? [];
@@ -77,9 +166,39 @@ export default function GroupDetail() {
     getSortedRowModel: getSortedRowModel(),
   });
 
-  if (groupQuery.isLoading) return <div className="loading">Loading group…</div>;
-  if (groupQuery.isError || !groupQuery.data)
-    return <div className="center-state">Group not found.</div>;
+  if (groupQuery.isLoading) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: 280,
+          color: "var(--muted)",
+          fontFamily: "var(--font-display)",
+          fontSize: 14,
+        }}
+      >
+        Loading group…
+      </div>
+    );
+  }
+
+  if (groupQuery.isError || !groupQuery.data) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: 280,
+          color: "var(--muted)",
+          fontFamily: "var(--font-display)",
+          fontSize: 14,
+        }}
+      >
+        Group not found.
+      </div>
+    );
+  }
 
   const group = groupQuery.data;
 
@@ -99,128 +218,360 @@ export default function GroupDetail() {
     await navigate({ to: "/groups" });
   };
 
+  // Podium data (top 3)
+  const podium = data.slice(0, 3);
+  const podiumHeights = [80, 110, 64];
+  const podiumOrder = [1, 0, 2]; // silver, gold, bronze display order
+
   return (
     <div>
-      <div className="page-head spread">
+      {/* Page header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: 24,
+          gap: 12,
+        }}
+      >
         <div>
           <button
-            className="btn btn-ghost btn-sm"
             onClick={() => navigate({ to: "/groups" })}
-            style={{ marginBottom: 8, paddingLeft: 0 }}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--muted)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 13.5,
+              cursor: "pointer",
+              padding: "0 0 10px",
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
           >
             ← All groups
           </button>
-          <h1>{group.name}</h1>
-          <p>
+          <h1
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 26,
+              letterSpacing: "-0.02em",
+              color: "var(--text)",
+              marginBottom: 4,
+            }}
+          >
+            {group.name}
+          </h1>
+          <p style={{ color: "var(--muted)", fontSize: 14 }}>
             {group.member_count} member{group.member_count === 1 ? "" : "s"}
           </p>
         </div>
-        <button className="btn btn-secondary btn-sm" onClick={onLeave}>
+        <button
+          onClick={onLeave}
+          style={{
+            padding: "8px 14px",
+            borderRadius: "var(--r-sm)",
+            background: "var(--surface2)",
+            border: "1px solid var(--line)",
+            color: "var(--muted)",
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: 13,
+            cursor: "pointer",
+          }}
+        >
           Leave group
         </button>
       </div>
 
-      <div className="card card-pad" style={{ marginBottom: 18 }}>
-        <div className="spread">
-          <div>
-            <div className="section-title" style={{ margin: 0 }}>
-              Invite friends
-            </div>
-            <span className="muted" style={{ fontSize: 13 }}>
-              Share this code so friends can join.
-            </span>
+      {/* Invite code card */}
+      <div
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg)",
+          padding: "16px 20px",
+          marginBottom: 18,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 800,
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.14em",
+              color: "var(--primary)",
+              fontFamily: "var(--font-display)",
+              marginBottom: 4,
+            }}
+          >
+            Invite your mates
           </div>
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <span className="code-pill">{group.invite_code}</span>
-            <button className="btn btn-secondary btn-sm" onClick={copyCode}>
-              {copied ? "Copied ✓" : "Copy"}
-            </button>
-          </div>
+          <span style={{ color: "var(--muted)", fontSize: 13 }}>
+            Share this code so friends can join.
+          </span>
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontWeight: 700,
+              fontSize: 22,
+              letterSpacing: "0.12em",
+              color: "var(--text)",
+              background: "var(--surface2)",
+              border: "1px solid var(--line2)",
+              borderRadius: "var(--r-sm)",
+              padding: "6px 14px",
+            }}
+          >
+            {group.invite_code}
+          </span>
+          <button
+            onClick={copyCode}
+            style={{
+              padding: "8px 14px",
+              borderRadius: "var(--r-sm)",
+              background: copied ? "color-mix(in oklab, var(--green) 14%, transparent)" : "var(--surface2)",
+              border: `1px solid ${copied ? "var(--green)" : "var(--line)"}`,
+              color: copied ? "var(--green)" : "var(--text)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 13,
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            {copied ? "Copied ✓" : "Copy"}
+          </button>
         </div>
       </div>
 
-      <div className="filters">
-        <button
-          className={`filter-btn ${tab === "leaderboard" ? "active" : ""}`}
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 20 }}>
+        <FilterChip
+          active={tab === "leaderboard"}
           onClick={() => setTab("leaderboard")}
         >
           Leaderboard
-        </button>
-        <button
-          className={`filter-btn ${tab === "predictions" ? "active" : ""}`}
+        </FilterChip>
+        <FilterChip
+          active={tab === "predictions"}
           onClick={() => setTab("predictions")}
         >
           Predictions
-        </button>
+        </FilterChip>
       </div>
 
       {tab === "leaderboard" ? (
         <div>
-          <div className="lb-toolbar">
-            <div className="filters" style={{ marginBottom: 0 }}>
-              <button
-                type="button"
-                className={`filter-btn ${scoreMode === "finished" ? "active" : ""}`}
+          {/* Live/Finished toggle */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 12,
+              flexWrap: "wrap",
+              marginBottom: 18,
+            }}
+          >
+            <div style={{ display: "flex", gap: 6 }}>
+              <FilterChip
+                active={scoreMode === "finished"}
                 onClick={() => setScoreMode("finished")}
               >
                 Finished
-              </button>
-              <button
-                type="button"
-                className={`filter-btn ${scoreMode === "live" ? "active" : ""}`}
+              </FilterChip>
+              <FilterChip
+                active={scoreMode === "live"}
                 onClick={() => setScoreMode("live")}
               >
                 Live{hasLiveDelta ? " ●" : ""}
-              </button>
+              </FilterChip>
             </div>
-            <span className="muted" style={{ fontSize: 12.5 }}>
+            <span style={{ color: "var(--muted)", fontSize: 12.5 }}>
               {scoreMode === "live"
                 ? "Includes provisional points from in-progress matches."
                 : "Official points from finished matches only."}
             </span>
           </div>
-          <div className="card">
-          <table className="table">
-            <thead>
-              {table.getHeaderGroups().map((hg) => (
-                <tr key={hg.id}>
-                  {hg.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
+
+          {/* Podium (top 3) */}
+          {podium.length >= 2 && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "flex-end",
+                justifyContent: "center",
+                gap: 8,
+                marginBottom: 24,
+                padding: "24px 16px 0",
+              }}
+            >
+              {podiumOrder.map((pos) => {
+                const member = podium[pos];
+                if (!member) return null;
+                const height = podiumHeights[pos];
+                const medalColors = [
+                  "var(--yellow)",
+                  "var(--muted)",
+                  "var(--orange)",
+                ];
+                const barColors = [
+                  "color-mix(in oklab, var(--yellow) 22%, transparent)",
+                  "color-mix(in oklab, var(--muted) 15%, transparent)",
+                  "color-mix(in oklab, var(--orange) 18%, transparent)",
+                ];
+                const isMe = member.user_id === user?.id;
+                return (
+                  <div
+                    key={member.user_id}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 8,
+                      flex: pos === 0 ? "1.1" : "1",
+                    }}
+                  >
+                    <Avatar nickname={member.nickname} size={pos === 0 ? 42 : 34} you={isMe} />
+                    <div
                       style={{
-                        cursor: header.column.getCanSort()
-                          ? "pointer"
-                          : "default",
+                        fontFamily: "var(--font-display)",
+                        fontWeight: 800,
+                        fontSize: pos === 0 ? 13.5 : 12,
+                        color: "var(--text)",
+                        textAlign: "center",
+                        maxWidth: 90,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
                       }}
                     >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {{ asc: " ▲", desc: " ▼" }[
-                        header.column.getIsSorted() as string
-                      ] ?? ""}
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.map((row) => (
-                <tr
-                  key={row.id}
-                  className={row.original.user_id === user?.id ? "row-me" : ""}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <td key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  ))}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                      {member.nickname}
+                    </div>
+                    <div
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 700,
+                        fontSize: 12.5,
+                        color: medalColors[pos],
+                      }}
+                    >
+                      {member.points} pts
+                    </div>
+                    <div
+                      style={{
+                        width: "100%",
+                        height,
+                        background: barColors[pos],
+                        border: `1px solid color-mix(in oklab, ${medalColors[pos]} 30%, transparent)`,
+                        borderRadius: "8px 8px 0 0",
+                        display: "flex",
+                        alignItems: "flex-start",
+                        justifyContent: "center",
+                        paddingTop: 8,
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 700,
+                        fontSize: 18,
+                        color: medalColors[pos],
+                      }}
+                    >
+                      {["🥇", "🥈", "🥉"][pos]}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Full table */}
+          <div
+            style={{
+              background: "var(--surface)",
+              border: "1px solid var(--line)",
+              borderRadius: "var(--r-lg)",
+              overflow: "hidden",
+            }}
+          >
+            <table
+              style={{ width: "100%", borderCollapse: "collapse" }}
+            >
+              <thead>
+                {table.getHeaderGroups().map((hg) => (
+                  <tr key={hg.id}>
+                    {hg.headers.map((header) => (
+                      <th
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                        style={{
+                          textAlign: "left",
+                          fontSize: 11,
+                          textTransform: "uppercase" as const,
+                          letterSpacing: "0.06em",
+                          color: "var(--faint)",
+                          padding: "12px 16px",
+                          borderBottom: "1px solid var(--line)",
+                          fontWeight: 800,
+                          fontFamily: "var(--font-display)",
+                          cursor: header.column.getCanSort() ? "pointer" : "default",
+                          userSelect: "none" as const,
+                        }}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        {
+                          { asc: " ▲", desc: " ▼" }[
+                            header.column.getIsSorted() as string
+                          ] ?? ""
+                        }
+                      </th>
+                    ))}
+                  </tr>
+                ))}
+              </thead>
+              <tbody>
+                {table.getRowModel().rows.map((row) => {
+                  const isMe = row.original.user_id === user?.id;
+                  return (
+                    <tr
+                      key={row.id}
+                      style={{
+                        background: isMe
+                          ? "color-mix(in oklab, var(--primary) 12%, transparent)"
+                          : undefined,
+                      }}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          style={{
+                            padding: "12px 16px",
+                            borderBottom: "1px solid var(--line)",
+                            fontSize: 14,
+                          }}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       ) : (
@@ -230,7 +581,7 @@ export default function GroupDetail() {
   );
 }
 
-function formatKickoff(iso: string): string {
+function formatKickoffLocal(iso: string): string {
   return new Date(iso).toLocaleString(undefined, {
     month: "short",
     day: "numeric",
@@ -239,12 +590,69 @@ function formatKickoff(iso: string): string {
   });
 }
 
-function Flag({ src, alt }: { src: string | null; alt: string }) {
-  if (!src) return <span className="flag" aria-hidden />;
-  return <img className="flag" src={src} alt={alt} loading="lazy" />;
+function MatchStatusBadge({ match }: { match: Match }) {
+  if (match.status === "live") {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "3px 9px",
+          borderRadius: 999,
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.06em",
+          fontFamily: "var(--font-display)",
+          background: "color-mix(in oklab, var(--red) 14%, transparent)",
+          color: "var(--red)",
+        }}
+      >
+        <span className="live-dot" style={{ width: 6, height: 6 }} /> Live
+      </span>
+    );
+  }
+  if (match.status === "finished") {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          padding: "3px 9px",
+          borderRadius: 999,
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.06em",
+          fontFamily: "var(--font-display)",
+          background: "color-mix(in oklab, var(--faint) 14%, transparent)",
+          color: "var(--faint)",
+        }}
+      >
+        Full time
+      </span>
+    );
+  }
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        padding: "3px 9px",
+        borderRadius: 999,
+        fontSize: 11,
+        fontWeight: 800,
+        textTransform: "uppercase" as const,
+        letterSpacing: "0.06em",
+        fontFamily: "var(--font-display)",
+        background: "color-mix(in oklab, var(--orange) 14%, transparent)",
+        color: "var(--orange)",
+      }}
+    >
+      Locked
+    </span>
+  );
 }
 
-// Mirrors the backend scoring rules (3 exact, 1 correct outcome, 0 otherwise).
 function calcPoints(
   predHome: number,
   predAway: number,
@@ -254,46 +662,6 @@ function calcPoints(
   if (predHome === actualHome && predAway === actualAway) return 3;
   const sign = (h: number, a: number) => Math.sign(h - a);
   return sign(predHome, predAway) === sign(actualHome, actualAway) ? 1 : 0;
-}
-
-function MatchStatusBadge({ match }: { match: Match }) {
-  if (match.status === "live")
-    return <span className="badge badge-live">● Live</span>;
-  if (match.status === "finished")
-    return <span className="badge badge-finished">Full time</span>;
-  return <span className="badge badge-locked">Locked</span>;
-}
-
-function MatchHeader({ match }: { match: Match }) {
-  const finished = match.status === "finished";
-  const live = match.status === "live";
-  return (
-    <div className="pred-match-head">
-      <div className="pred-teams">
-        <Flag src={match.home_flag} alt={match.home_team} />
-        <strong>{match.home_team}</strong>
-        {finished || live ? (
-          <span className="pred-score">
-            {match.home_score ?? 0} – {match.away_score ?? 0}
-          </span>
-        ) : (
-          <span className="pred-vs">vs</span>
-        )}
-        <strong>{match.away_team}</strong>
-        <Flag src={match.away_flag} alt={match.away_team} />
-      </div>
-      <div className="pred-head-meta">
-        <MatchStatusBadge match={match} />
-        <span className="muted" style={{ fontSize: 13 }}>
-          {finished
-            ? "Full time"
-            : live
-              ? "In progress"
-              : formatKickoff(match.kickoff)}
-        </span>
-      </div>
-    </div>
-  );
 }
 
 function MatchPredictionsCard({
@@ -314,43 +682,203 @@ function MatchPredictionsCard({
   const showPoints = finished || (live && hasResult);
 
   return (
-    <div className="card card-pad">
-      <MatchHeader match={match} />
+    <div
+      style={{
+        background: "var(--surface)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-lg)",
+        overflow: "hidden",
+        padding: "18px 20px",
+      }}
+    >
+      {/* Match header */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+          marginBottom: 16,
+          paddingBottom: 14,
+          borderBottom: "1px solid var(--line)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <FlagBadge src={match.home_flag} alt={match.home_team} size={24} />
+          <strong
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 14.5,
+            }}
+          >
+            {match.home_team}
+          </strong>
+          {(finished || live) ? (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontWeight: 700,
+                fontSize: 16,
+                color: live ? "var(--red)" : "var(--text)",
+                padding: "0 4px",
+              }}
+            >
+              {match.home_score ?? 0} – {match.away_score ?? 0}
+            </span>
+          ) : (
+            <span style={{ color: "var(--muted)", fontWeight: 600, padding: "0 4px" }}>vs</span>
+          )}
+          <strong
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 14.5,
+            }}
+          >
+            {match.away_team}
+          </strong>
+          <FlagBadge src={match.away_flag} alt={match.away_team} size={24} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <MatchStatusBadge match={match} />
+          <span style={{ color: "var(--muted)", fontSize: 12.5 }}>
+            {finished ? "Full time" : live ? "In progress" : formatKickoffLocal(match.kickoff)}
+          </span>
+        </div>
+      </div>
 
       {predictions.length === 0 ? (
-        <div className="pred-empty">
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>
           No one in this group predicted this match.
-        </div>
+        </p>
       ) : (
         <>
-          <table className="table pred-table">
+          <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                <th>Player</th>
-                <th className="num">
-                  <span className="th-team">
-                    <Flag src={match.home_flag} alt={match.home_team} />
-                    {match.home_team}
-                  </span>
+                <th
+                  style={{
+                    textAlign: "left",
+                    fontSize: 11,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.06em",
+                    color: "var(--faint)",
+                    padding: "8px 12px",
+                    borderBottom: "1px solid var(--line)",
+                    fontWeight: 800,
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  Player
                 </th>
-                <th className="num">
-                  <span className="th-team">
-                    <Flag src={match.away_flag} alt={match.away_team} />
+                <th
+                  style={{
+                    textAlign: "center",
+                    width: 80,
+                    fontSize: 11,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.06em",
+                    color: "var(--faint)",
+                    padding: "8px 12px",
+                    borderBottom: "1px solid var(--line)",
+                    fontWeight: 800,
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <FlagBadge src={match.home_flag} alt={match.home_team} size={14} />
+                    {match.home_team}
+                  </div>
+                </th>
+                <th
+                  style={{
+                    textAlign: "center",
+                    width: 80,
+                    fontSize: 11,
+                    textTransform: "uppercase" as const,
+                    letterSpacing: "0.06em",
+                    color: "var(--faint)",
+                    padding: "8px 12px",
+                    borderBottom: "1px solid var(--line)",
+                    fontWeight: 800,
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
+                    <FlagBadge src={match.away_flag} alt={match.away_team} size={14} />
                     {match.away_team}
-                  </span>
+                  </div>
                 </th>
                 {showPoints && (
-                  <th className="num">{live ? "Live pts" : "Points"}</th>
+                  <th
+                    style={{
+                      textAlign: "center",
+                      width: 80,
+                      fontSize: 11,
+                      textTransform: "uppercase" as const,
+                      letterSpacing: "0.06em",
+                      color: "var(--faint)",
+                      padding: "8px 12px",
+                      borderBottom: "1px solid var(--line)",
+                      fontWeight: 800,
+                      fontFamily: "var(--font-display)",
+                    }}
+                  >
+                    {live ? "Live pts" : "Points"}
+                  </th>
                 )}
               </tr>
             </thead>
             <tbody>
               {hasResult && (
-                <tr className="pred-result-row">
-                  <td>{live ? "Live score" : "Final result"}</td>
-                  <td className="num">{match.home_score}</td>
-                  <td className="num">{match.away_score}</td>
-                  {showPoints && <td className="num" />}
+                <tr
+                  style={{
+                    background: "var(--surface2)",
+                  }}
+                >
+                  <td
+                    style={{
+                      padding: "10px 12px",
+                      borderBottom: "1px solid var(--line)",
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: "var(--muted)",
+                      fontFamily: "var(--font-display)",
+                    }}
+                  >
+                    {live ? "Live score" : "Final result"}
+                  </td>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      padding: "10px 12px",
+                      borderBottom: "1px solid var(--line)",
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: "var(--text)",
+                    }}
+                  >
+                    {match.home_score}
+                  </td>
+                  <td
+                    style={{
+                      textAlign: "center",
+                      padding: "10px 12px",
+                      borderBottom: "1px solid var(--line)",
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 700,
+                      fontSize: 15,
+                      color: "var(--text)",
+                    }}
+                  >
+                    {match.away_score}
+                  </td>
+                  {showPoints && (
+                    <td style={{ padding: "10px 12px", borderBottom: "1px solid var(--line)" }} />
+                  )}
                 </tr>
               )}
               {predictions.map((p) => {
@@ -370,45 +898,112 @@ function MatchPredictionsCard({
                 return (
                   <tr
                     key={p.user_id}
-                    className={`${isMe ? "row-me" : ""} ${
-                      exact ? "pred-row-exact" : ""
-                    }`}
+                    style={{
+                      background: exact
+                        ? "color-mix(in oklab, var(--green) 10%, transparent)"
+                        : isMe
+                        ? "color-mix(in oklab, var(--primary) 12%, transparent)"
+                        : undefined,
+                    }}
                   >
-                    <td>
-                      <strong>{p.nickname}</strong>
-                      {isMe && <span className="you-tag">You</span>}
+                    <td
+                      style={{
+                        padding: "11px 12px",
+                        borderBottom: "1px solid var(--line)",
+                        fontSize: 14,
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <Avatar nickname={p.nickname} size={24} you={isMe} />
+                        <strong style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
+                          {p.nickname}
+                        </strong>
+                        {isMe && (
+                          <span
+                            style={{
+                              fontSize: 10,
+                              fontWeight: 800,
+                              color: "var(--primary)",
+                              background: "color-mix(in oklab, var(--primary) 14%, transparent)",
+                              padding: "1px 7px",
+                              borderRadius: 999,
+                              textTransform: "uppercase" as const,
+                              letterSpacing: "0.04em",
+                              fontFamily: "var(--font-display)",
+                            }}
+                          >
+                            You
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="num">{p.home_score}</td>
-                    <td className="num">{p.away_score}</td>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        padding: "11px 12px",
+                        borderBottom: "1px solid var(--line)",
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 600,
+                        fontSize: 15,
+                      }}
+                    >
+                      {p.home_score}
+                    </td>
+                    <td
+                      style={{
+                        textAlign: "center",
+                        padding: "11px 12px",
+                        borderBottom: "1px solid var(--line)",
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 600,
+                        fontSize: 15,
+                      }}
+                    >
+                      {p.away_score}
+                    </td>
                     {showPoints && (
-                      <td className="num">
+                      <td
+                        style={{
+                          textAlign: "center",
+                          padding: "11px 12px",
+                          borderBottom: "1px solid var(--line)",
+                        }}
+                      >
                         {finished ? (
                           p.scored ? (
                             <span
-                              className={`points-tag ${
-                                p.points ? "earned" : "zero"
-                              }`}
+                              style={{
+                                fontWeight: 700,
+                                fontSize: 13,
+                                color: exact
+                                  ? "var(--green)"
+                                  : p.points
+                                  ? "var(--yellow)"
+                                  : "var(--muted)",
+                              }}
                             >
-                              {exact
-                                ? "Exact +3"
-                                : p.points
-                                  ? `Outcome +${p.points}`
-                                  : "+0"}
+                              {exact ? "Exact +3" : p.points ? `Outcome +${p.points}` : "+0"}
                             </span>
                           ) : (
-                            <span className="muted">—</span>
+                            <span style={{ color: "var(--muted)" }}>—</span>
                           )
                         ) : (
                           <span
-                            className={`points-tag ${
-                              livePoints ? "earned" : "zero"
-                            }`}
+                            style={{
+                              fontWeight: 700,
+                              fontSize: 13,
+                              color: exact
+                                ? "var(--green)"
+                                : livePoints
+                                ? "var(--yellow)"
+                                : "var(--muted)",
+                            }}
                           >
                             {exact
                               ? "Exact +3"
                               : livePoints
-                                ? `On track +${livePoints}`
-                                : "+0"}
+                              ? `On track +${livePoints}`
+                              : "+0"}
                           </span>
                         )}
                       </td>
@@ -419,15 +1014,14 @@ function MatchPredictionsCard({
             </tbody>
           </table>
           {live && (
-            <div className="pred-caption">
-              Live — provisional points update with the score. Final points are
-              awarded at full time.
-            </div>
+            <p style={{ marginTop: 12, fontSize: 12.5, color: "var(--muted)" }}>
+              Live — provisional points update with the score. Final points are awarded at full time.
+            </p>
           )}
           {!finished && !live && (
-            <div className="pred-caption">
+            <p style={{ marginTop: 12, fontSize: 12.5, color: "var(--muted)" }}>
               Predictions are locked. Points are awarded once the match finishes.
-            </div>
+            </p>
           )}
         </>
       )}
@@ -447,17 +1041,64 @@ function PredictionsPanel({
   const { data, isLoading, isError } = useGroupPredictions(groupId);
   const [filter, setFilter] = useState<PredFilter>("all");
 
-  if (isLoading) return <div className="loading">Loading predictions…</div>;
-  if (isError) return <div className="center-state">Couldn't load predictions.</div>;
+  if (isLoading) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: 240,
+          color: "var(--muted)",
+          fontFamily: "var(--font-display)",
+          fontSize: 14,
+        }}
+      >
+        Loading predictions…
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          minHeight: 240,
+          color: "var(--muted)",
+          fontFamily: "var(--font-display)",
+          fontSize: 14,
+        }}
+      >
+        Couldn't load predictions.
+      </div>
+    );
+  }
 
   const blocks = data ?? [];
   if (blocks.length === 0) {
     return (
-      <div className="card empty">
-        <h3>Nothing to reveal yet</h3>
-        <p>
-          Members' predictions appear here once a match's deadline (2 hours before
-          kickoff) has passed.
+      <div
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg)",
+          padding: "48px 24px",
+          textAlign: "center",
+        }}
+      >
+        <h3
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 800,
+            fontSize: 17,
+            color: "var(--text)",
+            marginBottom: 8,
+          }}
+        >
+          Nothing to reveal yet
+        </h3>
+        <p style={{ color: "var(--muted)", fontSize: 14 }}>
+          Members' predictions appear here once a match's deadline (2 hours before kickoff) has passed.
         </p>
       </div>
     );
@@ -481,34 +1122,51 @@ function PredictionsPanel({
     filter === "all"
       ? true
       : filter === "locked"
-        ? match.status === "scheduled"
-        : match.status === filter,
+      ? match.status === "scheduled"
+      : match.status === filter,
   );
 
   return (
     <div>
-      <div className="filters">
+      <div style={{ display: "flex", gap: 6, marginBottom: 18, flexWrap: "wrap" }}>
         {options.map((opt) =>
           opt.id === "all" || counts[opt.id] > 0 ? (
-            <button
-              type="button"
+            <FilterChip
               key={opt.id}
-              className={`filter-btn ${filter === opt.id ? "active" : ""}`}
+              active={filter === opt.id}
               onClick={() => setFilter(opt.id)}
             >
               {opt.label} ({counts[opt.id]})
-            </button>
+            </FilterChip>
           ) : null,
         )}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="card empty">
-          <h3>No {filter} matches</h3>
-          <p>Try a different filter.</p>
+        <div
+          style={{
+            background: "var(--surface)",
+            border: "1px solid var(--line)",
+            borderRadius: "var(--r-lg)",
+            padding: "48px 24px",
+            textAlign: "center",
+          }}
+        >
+          <h3
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 17,
+              color: "var(--text)",
+              marginBottom: 8,
+            }}
+          >
+            No {filter} matches
+          </h3>
+          <p style={{ color: "var(--muted)", fontSize: 14 }}>Try a different filter.</p>
         </div>
       ) : (
-        <div className="stack">
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {filtered.map(({ match, predictions }) => (
             <MatchPredictionsCard
               key={match.id}
