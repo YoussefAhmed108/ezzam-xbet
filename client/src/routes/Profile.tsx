@@ -35,7 +35,7 @@ const SCORING_ROWS = [
 ];
 
 export default function Profile() {
-  const { user, logout } = useAuth();
+  const { user, logout, updateProfile } = useAuth();
   const navigate = useNavigate();
   const predictionsQuery = useMyPredictions();
   const matchesQuery = useMatches();
@@ -48,6 +48,47 @@ export default function Profile() {
   const [selectedColor, setSelectedColor] = useState<string>(
     user ? avatarColor(user.nickname) : AVATAR_COLORS[1],
   );
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveOk, setSaveOk] = useState(false);
+
+  const isDirty =
+    !!user &&
+    (localNickname.trim() !== user.nickname ||
+      localEmail.trim() !== user.email ||
+      localFirstName.trim() !== user.first_name ||
+      localLastName.trim() !== user.last_name);
+
+  const canSave =
+    isDirty &&
+    !saving &&
+    localNickname.trim().length >= 2 &&
+    localEmail.trim().length > 0 &&
+    localFirstName.trim().length > 0 &&
+    localLastName.trim().length > 0;
+
+  const onSave = async () => {
+    if (!canSave) return;
+    setSaving(true);
+    setSaveError(null);
+    setSaveOk(false);
+    try {
+      await updateProfile({
+        nickname: localNickname.trim(),
+        email: localEmail.trim(),
+        first_name: localFirstName.trim(),
+        last_name: localLastName.trim(),
+      });
+      setSaveOk(true);
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : "Couldn't save changes.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const preds = predictionsQuery.data ?? [];
@@ -221,6 +262,66 @@ export default function Profile() {
               />
             ))}
           </div>
+        </div>
+
+        {/* Save row */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            flexWrap: "wrap",
+            marginTop: 22,
+            paddingTop: 20,
+            borderTop: "1px solid var(--line)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={!canSave}
+            style={{
+              padding: "11px 22px",
+              borderRadius: "var(--r-sm)",
+              background: canSave ? "var(--primary)" : "var(--surface2)",
+              border: "none",
+              color: canSave ? "#fff" : "var(--faint)",
+              fontFamily: "var(--font-display)",
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: canSave ? "pointer" : "not-allowed",
+              boxShadow: canSave
+                ? "0 4px 14px color-mix(in oklab, var(--primary) 40%, transparent)"
+                : undefined,
+              transition: "all 0.15s",
+            }}
+          >
+            {saving ? "Saving…" : "Save changes"}
+          </button>
+          {saveOk && !isDirty && (
+            <span
+              style={{
+                color: "var(--green)",
+                fontSize: 13.5,
+                fontWeight: 700,
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              ✓ Saved
+            </span>
+          )}
+          {saveError && (
+            <span
+              style={{
+                color: "var(--red)",
+                fontSize: 13.5,
+                fontWeight: 700,
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              {saveError}
+            </span>
+          )}
         </div>
       </div>
 

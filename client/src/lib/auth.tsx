@@ -15,6 +15,7 @@ interface AuthContextValue {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
+  updateProfile: (payload: ProfileUpdate) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -25,6 +26,13 @@ export interface SignupPayload {
   first_name: string;
   last_name: string;
   password: string;
+}
+
+export interface ProfileUpdate {
+  nickname?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -74,6 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(res.user);
   }, []);
 
+  const updateProfile = useCallback(async (payload: ProfileUpdate) => {
+    const updated = await apiFetch<User>("/auth/me", {
+      method: "PATCH",
+      body: payload,
+    });
+    setUser(updated);
+  }, []);
+
   const logout = useCallback(() => {
     clearToken();
     setUser(null);
@@ -85,6 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: user !== null,
     login,
     signup,
+    updateProfile,
     logout,
     refresh: loadUser,
   };

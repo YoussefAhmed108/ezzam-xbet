@@ -18,6 +18,13 @@ class UserLogin(BaseModel):
     password: str
 
 
+class UserUpdate(BaseModel):
+    nickname: Optional[str] = Field(default=None, min_length=2, max_length=30)
+    email: Optional[EmailStr] = None
+    first_name: Optional[str] = Field(default=None, min_length=1, max_length=50)
+    last_name: Optional[str] = Field(default=None, min_length=1, max_length=50)
+
+
 class UserPublic(BaseModel):
     id: str
     nickname: str
