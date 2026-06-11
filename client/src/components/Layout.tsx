@@ -48,7 +48,7 @@ export default function Layout() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
+    <div className="app-root" style={{ display: "flex", minHeight: "100vh", background: "var(--bg)" }}>
       {/* ── Desktop Sidebar ── */}
       <aside
         style={{
@@ -220,7 +220,7 @@ export default function Layout() {
           maxWidth: "calc(var(--content-max) + var(--sidebar-w))",
           width: "100%",
           overflowY: "auto",
-          minHeight: "100vh",
+          height: "100vh",
         }}
         className="main-content"
       >
@@ -278,10 +278,18 @@ export default function Layout() {
       {/* ── Responsive styles ── */}
       <style>{`
         @media (max-width: 900px) {
+          body { overflow: auto !important; }
+          .app-root { flex-direction: column !important; min-height: 100vh; }
           .sidebar-desktop { display: none !important; }
           .mobile-header   { display: flex !important; }
           .mobile-bottom-nav { display: block !important; }
-          .main-content    { margin-left: 0 !important; padding: 16px 14px 96px !important; }
+          .main-content {
+            margin-left: 0 !important;
+            height: auto !important;
+            overflow: visible !important;
+            max-width: 100% !important;
+            padding: 16px 14px 96px !important;
+          }
         }
       `}</style>
     </div>

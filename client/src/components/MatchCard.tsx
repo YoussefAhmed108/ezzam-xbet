@@ -393,14 +393,16 @@ export default function MatchCard({
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: editable ? "1fr auto 1fr auto" : "1fr auto 1fr",
+          gridTemplateColumns: editable
+            ? "minmax(0,1fr) auto minmax(0,1fr)"
+            : "minmax(0,1fr) auto minmax(0,1fr) auto",
           alignItems: "center",
           gap: 0,
           padding: "14px 18px",
         }}
       >
         {/* Home team */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
           <FlagBadge src={match.home_flag} alt={match.home_team} size={32} />
           <span
             style={{
@@ -411,6 +413,7 @@ export default function MatchCard({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap" as const,
+              minWidth: 0,
             }}
           >
             {match.home_team}
@@ -482,7 +485,7 @@ export default function MatchCard({
         </div>
 
         {/* Away team */}
-        <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "flex-end", minWidth: 0 }}>
           <span
             style={{
               fontFamily: "var(--font-display)",
@@ -492,6 +495,7 @@ export default function MatchCard({
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap" as const,
+              minWidth: 0,
             }}
           >
             {match.away_team}

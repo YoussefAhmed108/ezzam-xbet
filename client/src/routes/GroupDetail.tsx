@@ -220,7 +220,7 @@ export default function GroupDetail() {
 
   // Podium data (top 3)
   const podium = data.slice(0, 3);
-  const podiumHeights = [80, 110, 64];
+  const podiumHeights = [104, 80, 64]; // by rank: gold tallest, then silver, bronze
   const podiumOrder = [1, 0, 2]; // silver, gold, bronze display order
 
   return (
@@ -407,14 +407,14 @@ export default function GroupDetail() {
             </span>
           </div>
 
-          {/* Podium (top 3) */}
-          {podium.length >= 2 && (
+          {/* Podium (top 3) — only once there are real points to rank by */}
+          {podium.length >= 2 && podium[0].points > 0 && (
             <div
               style={{
                 display: "flex",
                 alignItems: "flex-end",
                 justifyContent: "center",
-                gap: 8,
+                gap: 10,
                 marginBottom: 24,
                 padding: "24px 16px 0",
               }}
@@ -442,7 +442,8 @@ export default function GroupDetail() {
                       flexDirection: "column",
                       alignItems: "center",
                       gap: 8,
-                      flex: pos === 0 ? "1.1" : "1",
+                      width: pos === 0 ? 110 : 92,
+                      flexShrink: 0,
                     }}
                   >
                     <Avatar nickname={member.nickname} size={pos === 0 ? 42 : 34} you={isMe} />
@@ -755,7 +756,8 @@ function MatchPredictionsCard({
         </p>
       ) : (
         <>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+          <div style={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 340 }}>
             <thead>
               <tr>
                 <th
@@ -1013,6 +1015,7 @@ function MatchPredictionsCard({
               })}
             </tbody>
           </table>
+          </div>
           {live && (
             <p style={{ marginTop: 12, fontSize: 12.5, color: "var(--muted)" }}>
               Live — provisional points update with the score. Final points are awarded at full time.

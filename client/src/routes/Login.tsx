@@ -27,6 +27,7 @@ export default function Login() {
 
   return (
     <div
+      className="auth-split"
       style={{
         minHeight: "100vh",
         display: "grid",
@@ -373,7 +374,7 @@ export default function Login() {
       <style>{`
         @media (max-width: 700px) {
           .login-hero { display: none !important; }
-          div[style*="gridTemplateColumns"] { grid-template-columns: 1fr !important; }
+          .auth-split { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>

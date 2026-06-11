@@ -13,7 +13,7 @@ const FILTERS: { key: Filter; label: string }[] = [
   { key: "finished", label: "Done" },
 ];
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 6;
 
 const STAGE_ORDER = [
   "GROUP_STAGE",
@@ -37,6 +37,14 @@ const STAGE_LABELS: Record<string, string> = {
 
 function stageLabel(stage: string): string {
   return STAGE_LABELS[stage] ?? formatLabel(stage);
+}
+
+// A match is "determined" once both teams are known (not placeholder "TBD").
+// Undetermined knockout fixtures can't be predicted, so they're hidden from "open".
+function isDetermined(m: { home_team: string; away_team: string }): boolean {
+  const home = (m.home_team ?? "").trim().toUpperCase();
+  const away = (m.away_team ?? "").trim().toUpperCase();
+  return home.length > 0 && away.length > 0 && home !== "TBD" && away !== "TBD";
 }
 
 function FilterChip({
@@ -96,6 +104,7 @@ export default function Matches() {
         (m) =>
           m.status === "scheduled" &&
           !m.locked &&
+          isDetermined(m) &&
           !predByMatch.has(m.id),
       ).length,
     [matches, predByMatch],
@@ -110,6 +119,18 @@ export default function Matches() {
       return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
     });
   }, [matches]);
+
+  const scrollToTop = () => {
+    document
+      .querySelector(".main-content")
+      ?.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const goToPage = (updater: (p: number) => number) => {
+    setPage(updater);
+    scrollToTop();
+  };
 
   const changeFilter = (next: Filter) => {
     setFilter(next);
@@ -160,10 +181,11 @@ export default function Matches() {
     if (filter === "all") return true;
     if (filter === "live") return m.status === "live";
     if (filter === "finished") return m.status === "finished";
-    // "open" = scheduled + not locked + no prediction
+    // "open" = scheduled + not locked + both teams determined + no prediction
     return (
       m.status === "scheduled" &&
       !m.locked &&
+      isDetermined(m) &&
       !predByMatch.has(m.id)
     );
   });
@@ -295,7 +317,7 @@ export default function Matches() {
               <button
                 type="button"
                 disabled={safePage === 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                onClick={() => goToPage((p) => Math.max(1, p - 1))}
                 style={{
                   padding: "7px 14px",
                   borderRadius: "var(--r-sm)",
@@ -322,7 +344,7 @@ export default function Matches() {
               <button
                 type="button"
                 disabled={safePage === totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                onClick={() => goToPage((p) => Math.min(totalPages, p + 1))}
                 style={{
                   padding: "7px 14px",
                   borderRadius: "var(--r-sm)",

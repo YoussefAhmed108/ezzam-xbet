@@ -92,44 +92,21 @@ export function FlagBadge({
 }
 
 // ── Emblem ─────────────────────────────────────────────────────────────────
+// The World Cup trophy mark (portrait, transparent PNG served from /logo.png).
+// `size` controls the rendered height; width scales to preserve aspect ratio.
 export function Emblem({ size = 30 }: { size?: number }) {
   return (
-    <div
+    <img
+      src="/logo.png"
+      alt="PitchPool"
       style={{
-        width: size,
-        height: size,
-        borderRadius: "50%",
-        background: `conic-gradient(
-          var(--primary) 0deg 90deg,
-          var(--purple) 90deg 180deg,
-          var(--red) 180deg 270deg,
-          var(--green) 270deg 360deg
-        )`,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
+        height: size * 1.2,
+        width: "auto",
+        display: "block",
         flexShrink: 0,
+        objectFit: "contain",
       }}
-    >
-      <div
-        style={{
-          width: size * 0.58,
-          height: size * 0.58,
-          borderRadius: "50%",
-          background: "var(--bg2)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "var(--font-mono)",
-          fontWeight: 700,
-          fontSize: size * 0.26,
-          color: "var(--text)",
-          letterSpacing: "-0.02em",
-        }}
-      >
-        26
-      </div>
-    </div>
+    />
   );
 }
 

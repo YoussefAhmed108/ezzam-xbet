@@ -76,6 +76,7 @@ export default function Signup() {
 
   return (
     <div
+      className="auth-split"
       style={{
         minHeight: "100vh",
         display: "grid",
@@ -663,7 +664,7 @@ export default function Signup() {
       <style>{`
         @media (max-width: 700px) {
           .signup-hero { display: none !important; }
-          div[style*="gridTemplateColumns"] { grid-template-columns: 1fr !important; }
+          .auth-split { grid-template-columns: 1fr !important; }
         }
       `}</style>
     </div>
