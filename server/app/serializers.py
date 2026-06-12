@@ -13,6 +13,7 @@ def user_public(doc: dict) -> dict:
         "first_name": doc["first_name"],
         "last_name": doc["last_name"],
         "total_points": doc.get("total_points", 0),
+        "avatar_url": doc.get("avatar_url"),
     }
 
 

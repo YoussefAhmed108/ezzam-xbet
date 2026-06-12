@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useAuth } from "../lib/auth";
 import { useMatches, useMyPredictions } from "../lib/queries";
 import { Avatar, avatarColor, SectionTitle } from "../components/ui";
@@ -35,7 +35,7 @@ const SCORING_ROWS = [
 ];
 
 export default function Profile() {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, logout, updateProfile, uploadAvatar } = useAuth();
   const navigate = useNavigate();
   const predictionsQuery = useMyPredictions();
   const matchesQuery = useMatches();
@@ -52,6 +52,26 @@ export default function Profile() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveOk, setSaveOk] = useState(false);
+
+  const [avatarHovered, setAvatarHovered] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarError, setAvatarError] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAvatarUploading(true);
+    setAvatarError(null);
+    try {
+      await uploadAvatar(file);
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setAvatarUploading(false);
+      e.target.value = "";
+    }
+  };
 
   const isDirty =
     !!user &&
@@ -161,12 +181,49 @@ export default function Profile() {
             borderBottom: "1px solid var(--line)",
           }}
         >
-          <Avatar
-            nickname={localNickname || user.nickname}
-            size={66}
-            color={selectedColor}
-            you
-          />
+          <div
+            style={{ position: "relative", flexShrink: 0, cursor: "pointer" }}
+            onMouseEnter={() => setAvatarHovered(true)}
+            onMouseLeave={() => setAvatarHovered(false)}
+            onClick={() => avatarInputRef.current?.click()}
+            title="Change photo"
+          >
+            <Avatar
+              nickname={localNickname || user.nickname}
+              size={66}
+              color={selectedColor}
+              you
+              src={user.avatar_url}
+            />
+            <div style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              opacity: avatarHovered || avatarUploading ? 1 : 0,
+              transition: "opacity 0.15s",
+              pointerEvents: "none",
+            }}>
+              {avatarUploading ? (
+                <span style={{ color: "#fff", fontSize: 11, fontWeight: 800 }}>…</span>
+              ) : (
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                  <circle cx="12" cy="13" r="4"/>
+                </svg>
+              )}
+            </div>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style={{ display: "none" }}
+              onChange={handleAvatarChange}
+            />
+          </div>
           <div>
             <h1
               style={{
@@ -320,6 +377,18 @@ export default function Profile() {
               }}
             >
               {saveError}
+            </span>
+          )}
+          {avatarError && (
+            <span
+              style={{
+                color: "var(--red)",
+                fontSize: 13.5,
+                fontWeight: 700,
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              Photo: {avatarError}
             </span>
           )}
         </div>

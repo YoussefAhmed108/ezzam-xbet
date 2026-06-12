@@ -22,11 +22,13 @@ export function Avatar({
   size = 36,
   color,
   you,
+  src,
 }: {
   nickname: string;
   size?: number;
   color?: string;
   you?: boolean;
+  src?: string | null;
 }) {
   const bg = color ?? avatarColor(nickname);
   const initials = nickname.slice(0, 2).toUpperCase();
@@ -45,6 +47,8 @@ export function Avatar({
         fontSize: size * 0.38,
         color: "#fff",
         flexShrink: 0,
+        overflow: "hidden",
+        position: "relative",
         boxShadow: you
           ? `0 0 0 2.5px var(--bg2), 0 0 0 4.5px var(--primary)`
           : undefined,
@@ -52,7 +56,15 @@ export function Avatar({
       }}
       aria-label={nickname}
     >
-      {initials}
+      {src ? (
+        <img
+          src={src}
+          alt={nickname}
+          style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", position: "absolute", inset: 0 }}
+        />
+      ) : (
+        initials
+      )}
     </div>
   );
 }

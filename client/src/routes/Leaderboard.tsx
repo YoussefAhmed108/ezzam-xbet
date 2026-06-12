@@ -338,7 +338,7 @@ export default function Leaderboard() {
                       }}
                     >
                       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <Avatar nickname={member.nickname} size={28} you={isMe} />
+                        <Avatar nickname={member.nickname} size={28} you={isMe} src={isMe ? user?.avatar_url : undefined} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <strong

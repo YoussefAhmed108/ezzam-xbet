@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { ApiError } from "../lib/api";
@@ -10,11 +10,20 @@ const TAKEN = ["GoalMachine", "TikiTaka_Tom", "PenaltyQueen", "Messi", "admin"];
 const SUGGESTIONS = ["ElTornado", "GroupG_God", "TheGaffer26", "OffsideKing", "GolazoGus"];
 
 export default function Signup() {
-  const { signup } = useAuth();
+  const { signup, uploadAvatar } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState(0);
   const [localNickname, setLocalNickname] = useState("");
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const avatarFileRef = useRef<File | null>(null);
+  const signupAvatarInputRef = useRef<HTMLInputElement>(null);
+
+  const handleSignupAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] ?? null;
+    avatarFileRef.current = file;
+    setAvatarPreview(file ? URL.createObjectURL(file) : null);
+  };
 
   const form = useForm({
     defaultValues: {
@@ -28,6 +37,9 @@ export default function Signup() {
       setError(null);
       try {
         await signup(value);
+        if (avatarFileRef.current) {
+          try { await uploadAvatar(avatarFileRef.current); } catch { /* non-fatal */ }
+        }
         await navigate({ to: "/matches" });
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "Sign up failed");
@@ -556,11 +568,42 @@ export default function Signup() {
                   textAlign: "left",
                 }}
               >
-                <Avatar
-                  nickname={form.state.values.nickname}
-                  size={48}
-                  you
-                />
+                <div
+                  style={{ position: "relative", flexShrink: 0, cursor: "pointer" }}
+                  onClick={() => signupAvatarInputRef.current?.click()}
+                  title="Add photo (optional)"
+                >
+                  <Avatar
+                    nickname={form.state.values.nickname}
+                    size={48}
+                    you
+                    src={avatarPreview}
+                  />
+                  <div style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    background: "rgba(0,0,0,0.45)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: avatarPreview ? 0 : 1,
+                    transition: "opacity 0.15s",
+                    pointerEvents: "none",
+                  }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                      <circle cx="12" cy="13" r="4"/>
+                    </svg>
+                  </div>
+                  <input
+                    ref={signupAvatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    style={{ display: "none" }}
+                    onChange={handleSignupAvatarChange}
+                  />
+                </div>
                 <div>
                   <div
                     style={{

@@ -32,6 +32,7 @@ class UserPublic(BaseModel):
     first_name: str
     last_name: str
     total_points: int = 0
+    avatar_url: Optional[str] = None
 
 
 class TokenResponse(BaseModel):

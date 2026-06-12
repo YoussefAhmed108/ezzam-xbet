@@ -32,6 +32,13 @@ class Settings(BaseSettings):
     score_sync_interval_minutes: int = 15
     prediction_lock_hours: int = 2
 
+    # Cloudflare R2 (S3-compatible) — used for avatar uploads
+    r2_account_id: str = ""
+    r2_access_key_id: str = ""
+    r2_secret_access_key: str = ""
+    r2_bucket_name: str = "ezzam-xbet"
+    r2_public_url: str = ""  # e.g. https://pub-xxxx.r2.dev or custom domain
+
     # Admin
     admin_sync_token: str = ""
 

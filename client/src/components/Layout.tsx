@@ -138,7 +138,7 @@ export default function Layout() {
                 border: "1px solid var(--line)",
               }}
             >
-              <Avatar nickname={user.nickname} size={34} you />
+              <Avatar nickname={user.nickname} size={34} you src={user.avatar_url} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div
                   style={{

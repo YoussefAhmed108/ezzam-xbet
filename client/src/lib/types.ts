@@ -5,6 +5,7 @@ export interface User {
   first_name: string;
   last_name: string;
   total_points: number;
+  avatar_url?: string | null;
 }
 
 export interface AuthResponse {

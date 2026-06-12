@@ -69,3 +69,23 @@ export async function apiFetch<T>(
 
   return data as T;
 }
+
+export async function apiUpload<T>(path: string, file: File): Promise<T> {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
+  const form = new FormData();
+  form.append("file", file);
+
+  const resp = await fetch(`${API_URL}${path}`, { method: "POST", headers, body: form });
+  if (resp.status === 204) return undefined as T;
+
+  const data = await resp.json().catch(() => null);
+  if (!resp.ok) {
+    const detail = (data && (data.detail as string)) || resp.statusText || "Upload failed";
+    if (resp.status === 401) clearToken();
+    throw new ApiError(typeof detail === "string" ? detail : "Upload failed", resp.status);
+  }
+  return data as T;
+}

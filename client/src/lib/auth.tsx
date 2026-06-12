@@ -6,7 +6,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { apiFetch, clearToken, getToken, setToken } from "./api";
+import { apiFetch, apiUpload, clearToken, getToken, setToken } from "./api";
 import type { AuthResponse, User } from "./types";
 
 interface AuthContextValue {
@@ -16,6 +16,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   signup: (payload: SignupPayload) => Promise<void>;
   updateProfile: (payload: ProfileUpdate) => Promise<void>;
+  uploadAvatar: (file: File) => Promise<void>;
   logout: () => void;
   refresh: () => Promise<void>;
 }
@@ -90,6 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(updated);
   }, []);
 
+  const uploadAvatar = useCallback(async (file: File) => {
+    const updated = await apiUpload<User>("/upload/avatar", file);
+    setUser(updated);
+  }, []);
+
   const logout = useCallback(() => {
     clearToken();
     setUser(null);
@@ -102,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     signup,
     updateProfile,
+    uploadAvatar,
     logout,
     refresh: loadUser,
   };
