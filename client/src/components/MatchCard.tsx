@@ -432,19 +432,21 @@ export default function MatchCard({
           }}
         >
           {isFinished || isLive ? (
-            <div
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontWeight: 700,
-                fontSize: 26,
-                letterSpacing: "0.04em",
-                color: isLive ? "var(--red)" : "var(--text)",
-              }}
-            >
-              {match.home_score ?? 0}
-              <span style={{ color: "var(--muted)", margin: "0 5px" }}>:</span>
-              {match.away_score ?? 0}
-            </div>
+            <>
+              <div
+                style={{
+                  fontFamily: "var(--font-mono)",
+                  fontWeight: 700,
+                  fontSize: 26,
+                  letterSpacing: "0.04em",
+                  color: isLive ? "var(--red)" : "var(--text)",
+                }}
+              >
+                {match.home_score ?? 0}
+                <span style={{ color: "var(--muted)", margin: "0 5px" }}>:</span>
+                {match.away_score ?? 0}
+              </div>
+            </>
           ) : editable ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Stepper

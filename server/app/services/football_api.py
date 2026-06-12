@@ -95,7 +95,14 @@ class FootballAPIClient:
 
         out: list[NormalizedMatch] = []
         for m in data.get("matches", []):
-            full = (m.get("score") or {}).get("fullTime") or {}
+            score = m.get("score") or {}
+            full = score.get("fullTime") or {}
+            half = score.get("halfTime") or {}
+            api_status = m.get("status", "")
+            norm_status = status_map.get(api_status, "scheduled")
+            # During PAUSED (half-time), fullTime holds the HT score
+            home_score = full.get("home") if full.get("home") is not None else half.get("home")
+            away_score = full.get("away") if full.get("away") is not None else half.get("away")
             out.append(
                 NormalizedMatch(
                     external_id=str(m["id"]),
@@ -106,9 +113,9 @@ class FootballAPIClient:
                     group=m.get("group"),
                     stage=m.get("stage"),
                     kickoff=_parse_dt(m["utcDate"]),
-                    status=status_map.get(m.get("status", ""), "scheduled"),
-                    home_score=full.get("home"),
-                    away_score=full.get("away"),
+                    status=norm_status,
+                    home_score=home_score,
+                    away_score=away_score,
                 )
             )
         return out
@@ -144,7 +151,8 @@ class FootballAPIClient:
             teams = item.get("teams") or {}
             goals = item.get("goals") or {}
             league = item.get("league") or {}
-            short = (fixture.get("status") or {}).get("short", "NS")
+            fix_status = fixture.get("status") or {}
+            short = fix_status.get("short", "NS")
             if short in finished:
                 status = "finished"
             elif short in live:

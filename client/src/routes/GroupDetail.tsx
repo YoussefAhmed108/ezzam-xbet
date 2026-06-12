@@ -170,6 +170,20 @@ export default function GroupDetail() {
     getSortedRowModel: getSortedRowModel(),
   });
 
+  const podiumGroups = useMemo(() => {
+    const groups: (typeof data[number])[][] = [];
+    let lastRank = -1;
+    for (const m of data) {
+      if (m.rank !== lastRank) {
+        if (groups.length >= 3) break;
+        groups.push([]);
+        lastRank = m.rank;
+      }
+      groups[groups.length - 1].push(m);
+    }
+    return groups;
+  }, [data]);
+
   if (groupQuery.isLoading) {
     return (
       <div
@@ -221,20 +235,6 @@ export default function GroupDetail() {
     await leave.mutateAsync(group.id);
     await navigate({ to: "/groups" });
   };
-
-  const podiumGroups = useMemo(() => {
-    const groups: (typeof data[number])[][] = [];
-    let lastRank = -1;
-    for (const m of data) {
-      if (m.rank !== lastRank) {
-        if (groups.length >= 3) break;
-        groups.push([]);
-        lastRank = m.rank;
-      }
-      groups[groups.length - 1].push(m);
-    }
-    return groups;
-  }, [data]);
   const podiumHeights = [104, 80, 64];
   const podiumOrder = [1, 0, 2];
 
