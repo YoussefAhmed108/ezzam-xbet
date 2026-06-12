@@ -15,9 +15,10 @@ import {
 } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import type { GroupMember, Match, MatchPredictions } from "../lib/types";
-import { Avatar, FlagBadge, PodiumAvatarStack } from "../components/ui";
+import { Avatar, FlagBadge, PodiumAvatarStack, ProfileModal } from "../components/ui";
 
-const columnHelper = createColumnHelper<GroupMember>();
+type TableRow = GroupMember & { position: number };
+const columnHelper = createColumnHelper<TableRow>();
 
 function FilterChip({
   active,
@@ -66,11 +67,20 @@ export default function GroupDetail() {
   const [sorting, setSorting] = useState<SortingState>([
     { id: "points", desc: true },
   ]);
+  const [profileModal, setProfileModal] = useState<{ userId: string; nickname: string; avatarUrl?: string | null; points?: number; rank?: number } | null>(null);
 
   const columns = useMemo(
     () => [
+      columnHelper.accessor("position", {
+        header: "Pos",
+        cell: (info) => (
+          <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700, color: "var(--faint)", fontSize: 13 }}>
+            {info.getValue()}
+          </span>
+        ),
+      }),
       columnHelper.accessor("rank", {
-        header: "#",
+        header: "Rank",
         cell: (info) => {
           const rank = info.getValue();
           const medals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
@@ -92,10 +102,15 @@ export default function GroupDetail() {
         header: "Player",
         cell: (info) => {
           const nickname = info.getValue();
-          const isMe = info.row.original.user_id === user?.id;
+          const member = info.row.original;
+          const isMe = member.user_id === user?.id;
           return (
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <Avatar nickname={nickname} size={28} you={isMe} />
+            <button
+              type="button"
+              onClick={() => setProfileModal({ userId: member.user_id, nickname, avatarUrl: member.avatar_url, points: member.points, rank: member.rank })}
+              style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
+            >
+              <Avatar nickname={nickname} size={28} you={isMe} src={member.avatar_url} />
               <strong
                 style={{
                   fontFamily: "var(--font-display)",
@@ -122,7 +137,7 @@ export default function GroupDetail() {
                   You
                 </span>
               )}
-            </div>
+            </button>
           );
         },
       }),
@@ -155,7 +170,7 @@ export default function GroupDetail() {
     let rank = 1;
     return ranked.map((m, i) => {
       if (i > 0 && m.points < ranked[i - 1].points) rank = i + 1;
-      return { ...m, rank };
+      return { ...m, rank, position: i + 1 };
     });
   }, [rawMembers, scoreMode]);
 
@@ -240,6 +255,17 @@ export default function GroupDetail() {
 
   return (
     <div>
+      {profileModal && (
+        <ProfileModal
+          userId={profileModal.userId}
+          nickname={profileModal.nickname}
+          avatarUrl={profileModal.avatarUrl}
+          points={profileModal.points}
+          rank={profileModal.rank}
+          contextLabel="Group rank"
+          onClose={() => setProfileModal(null)}
+        />
+      )}
       {/* Page header */}
       <div
         style={{
@@ -456,11 +482,16 @@ export default function GroupDetail() {
                       flexShrink: 0,
                     }}
                   >
-                    <PodiumAvatarStack
-                      members={group}
-                      size={pos === 0 ? 42 : 34}
-                      currentUserId={user?.id}
-                    />
+                    <div
+                      style={{ cursor: group.length === 1 ? "pointer" : "default" }}
+                      onClick={() => group.length === 1 && setProfileModal({ userId: group[0].user_id, nickname: group[0].nickname, avatarUrl: group[0].avatar_url, points: group[0].points, rank: group[0].rank })}
+                    >
+                      <PodiumAvatarStack
+                        members={group}
+                        size={pos === 0 ? 42 : 34}
+                        currentUserId={user?.id}
+                      />
+                    </div>
                     <div
                       style={{
                         fontFamily: "var(--font-display)",

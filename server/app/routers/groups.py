@@ -71,12 +71,13 @@ async def _group_out(db: AsyncIOMotorDatabase, group: dict) -> dict:
     member_ids = group.get("member_ids", [])
     live_extra = await _live_points_by_user(db, member_ids)
     members = []
-    async for u in db.users.find({"_id": {"$in": member_ids}}):
+    async for u in db.users.find({"_id": {"$in": member_ids}}, {"nickname": 1, "total_points": 1, "avatar_url": 1}):
         finished_points = u.get("total_points", 0)
         members.append(
             {
                 "user_id": str(u["_id"]),
                 "nickname": u["nickname"],
+                "avatar_url": u.get("avatar_url"),
                 "points": finished_points,
                 "live_points": finished_points + live_extra.get(u["_id"], 0),
             }

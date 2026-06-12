@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .db import close_mongo_connection, connect_to_mongo, get_db
-from .routers import admin, auth, groups, leaderboard, matches, predictions, upload
+from .routers import admin, auth, groups, leaderboard, matches, predictions, upload, users
 from .scheduler import start_scheduler, stop_scheduler
 
 logging.basicConfig(level=logging.INFO)
@@ -60,4 +60,5 @@ app.include_router(predictions.router)
 app.include_router(groups.router)
 app.include_router(leaderboard.router)
 app.include_router(upload.router)
+app.include_router(users.router)
 app.include_router(admin.router)

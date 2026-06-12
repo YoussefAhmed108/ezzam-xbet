@@ -48,6 +48,7 @@ export interface GroupMember {
   points: number;
   live_points: number;
   rank: number;
+  avatar_url?: string | null;
 }
 
 export interface LeaderboardEntry extends GroupMember {
@@ -63,6 +64,25 @@ export interface Group {
   owner_id: string;
   member_count: number;
   members: GroupMember[];
+}
+
+export interface UserPredictionEntry {
+  match: Match;
+  home_score: number;
+  away_score: number;
+  points: number | null;
+  scored: boolean;
+}
+
+export interface UserStats {
+  user_id: string;
+  nickname: string;
+  first_name: string;
+  last_name: string;
+  avatar_url?: string | null;
+  total_points: number;
+  exact: number;
+  outcome: number;
 }
 
 export interface MemberPrediction {

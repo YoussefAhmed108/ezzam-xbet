@@ -10,6 +10,8 @@ import type {
   Match,
   MatchPredictions,
   Prediction,
+  UserPredictionEntry,
+  UserStats,
 } from "./types";
 
 export const queryKeys = {
@@ -20,6 +22,7 @@ export const queryKeys = {
   groupPredictions: (id: string) => ["groups", id, "predictions"] as const,
   leaderboard: ["leaderboard"] as const,
   me: ["me"] as const,
+  userStats: (id: string) => ["userStats", id] as const,
 };
 
 export function useMatches() {
@@ -104,6 +107,24 @@ export function useGlobalLeaderboard() {
     queryKey: queryKeys.leaderboard,
     queryFn: () => apiFetch<LeaderboardEntry[]>("/leaderboard"),
     refetchInterval: 60_000,
+  });
+}
+
+export function useUserPredictions(userId: string | null) {
+  return useQuery({
+    queryKey: userId ? ["userPredictions", userId] : ["userPredictions", null],
+    queryFn: () => apiFetch<UserPredictionEntry[]>(`/users/${userId}/predictions`),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+}
+
+export function useUserStats(userId: string | null) {
+  return useQuery({
+    queryKey: userId ? queryKeys.userStats(userId) : ["userStats", null],
+    queryFn: () => apiFetch<UserStats>(`/users/${userId}/stats`),
+    enabled: !!userId,
+    staleTime: 30_000,
   });
 }
 

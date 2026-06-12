@@ -93,6 +93,7 @@ class GroupMemberOut(BaseModel):
     points: int
     live_points: int = 0
     rank: int
+    avatar_url: Optional[str] = None
 
 
 class LeaderboardEntryOut(GroupMemberOut):

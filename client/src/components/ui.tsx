@@ -1,4 +1,8 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useNavigate } from "@tanstack/react-router";
+import { apiFetch } from "../lib/api";
+import type { UserStats } from "../lib/types";
 
 // ── Avatar color helper ────────────────────────────────────────────────────
 const COLORS = [
@@ -254,6 +258,234 @@ export function Pill({
     >
       {children}
     </span>
+  );
+}
+
+// ── ProfileModal ───────────────────────────────────────────────────────────
+export function ProfileModal({
+  userId,
+  nickname,
+  avatarUrl,
+  fullName,
+  points,
+  rank,
+  contextLabel,
+  onClose,
+}: {
+  userId?: string;
+  nickname: string;
+  avatarUrl?: string | null;
+  fullName?: string;
+  points?: number;
+  rank?: number;
+  contextLabel?: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  const navigate = useNavigate();
+
+  const { data: stats, isLoading: statsLoading } = useQuery<UserStats>({
+    queryKey: ["userStats", userId],
+    queryFn: () => apiFetch<UserStats>(`/users/${userId}/stats`),
+    enabled: !!userId,
+    staleTime: 30_000,
+  });
+
+  const displayNickname = stats?.nickname ?? nickname;
+  const displayAvatarUrl = stats?.avatar_url ?? avatarUrl;
+  const displayFullName = stats
+    ? [stats.first_name, stats.last_name].filter(Boolean).join(" ") || undefined
+    : fullName;
+  const displayPoints = stats?.total_points ?? points;
+
+  const medals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
+
+  const statTile = (value: React.ReactNode, label: string, color: string) => (
+    <div
+      style={{
+        flex: 1,
+        background: "var(--bg2)",
+        border: "1px solid var(--line)",
+        borderRadius: "var(--r-sm)",
+        padding: "12px 10px",
+        textAlign: "center",
+        minWidth: 0,
+      }}
+    >
+      <div
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontWeight: 700,
+          fontSize: 20,
+          color,
+          lineHeight: 1,
+          marginBottom: 5,
+        }}
+      >
+        {value}
+      </div>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 700,
+          color: "var(--muted)",
+          textTransform: "uppercase" as const,
+          letterSpacing: "0.05em",
+          fontFamily: "var(--font-display)",
+        }}
+      >
+        {label}
+      </div>
+    </div>
+  );
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1000,
+        background: "rgba(0,0,0,0.65)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        backdropFilter: "blur(6px)",
+        cursor: "pointer",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: "var(--surface)",
+          border: "1px solid var(--line)",
+          borderRadius: "var(--r-lg)",
+          display: "flex",
+          flexDirection: "column",
+          cursor: "default",
+          width: 360,
+          maxHeight: "88vh",
+          overflowY: "auto",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header: avatar + name + stats */}
+        <div style={{ padding: "28px 28px 20px", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          {/* Avatar */}
+          <div style={{ marginBottom: 14 }}>
+            {displayAvatarUrl ? (
+              <img
+                src={displayAvatarUrl}
+                alt={displayNickname}
+                style={{
+                  width: 80,
+                  height: 80,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  display: "block",
+                  boxShadow: "0 0 0 3px var(--bg2), 0 0 0 5px var(--primary)",
+                }}
+              />
+            ) : (
+              <Avatar nickname={displayNickname} size={80} />
+            )}
+          </div>
+
+          {/* Nickname */}
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontWeight: 800,
+              fontSize: 20,
+              color: "var(--text)",
+              letterSpacing: "-0.02em",
+              textAlign: "center",
+              marginBottom: displayFullName ? 3 : 14,
+            }}
+          >
+            {displayNickname}
+          </div>
+
+          {/* Full name */}
+          {displayFullName && (
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 13,
+                color: "var(--muted)",
+                marginBottom: 14,
+                textAlign: "center",
+              }}
+            >
+              {displayFullName}
+            </div>
+          )}
+
+          {/* Stats */}
+          {statsLoading ? (
+            <div style={{ color: "var(--muted)", fontSize: 13, fontFamily: "var(--font-display)" }}>
+              Loading stats…
+            </div>
+          ) : stats ? (
+            <>
+              <div style={{ display: "flex", gap: 8, width: "100%", marginBottom: 8 }}>
+                {rank != null && statTile(medals[rank] ?? `#${rank}`, contextLabel ?? "Rank", rank <= 3 ? "var(--yellow)" : "var(--text)")}
+                {statTile(displayPoints ?? 0, "Total points", "var(--primary)")}
+              </div>
+              <div style={{ display: "flex", gap: 8, width: "100%" }}>
+                {statTile(stats.exact, "Exact results", "var(--green)")}
+                {statTile(stats.outcome, "Correct outcomes", "var(--yellow)")}
+              </div>
+            </>
+          ) : (
+            (rank != null || displayPoints != null) && (
+              <div style={{ display: "flex", gap: 10, width: "100%" }}>
+                {rank != null && statTile(medals[rank] ?? `#${rank}`, contextLabel ?? "Rank", rank <= 3 ? "var(--yellow)" : "var(--text)")}
+                {displayPoints != null && statTile(displayPoints, "Points", "var(--primary)")}
+              </div>
+            )
+          )}
+        </div>
+
+        {/* Footer: view predictions link + close hint */}
+        <div style={{
+          padding: "0 28px 22px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
+        }}>
+          {userId && (
+            <button
+              type="button"
+              onClick={() => { onClose(); void navigate({ to: "/players/$userId", params: { userId } }); }}
+              style={{
+                width: "100%",
+                padding: "10px 0",
+                borderRadius: "var(--r-sm)",
+                background: "var(--primary)",
+                border: "none",
+                color: "#fff",
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                fontSize: 13.5,
+                cursor: "pointer",
+                boxShadow: "0 4px 14px color-mix(in oklab, var(--primary) 35%, transparent)",
+              }}
+            >
+              See predictions →
+            </button>
+          )}
+          <div style={{ fontSize: 11, color: "var(--faint)", fontFamily: "var(--font-display)" }}>
+            Click anywhere to close
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 

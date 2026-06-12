@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useGlobalLeaderboard } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import type { LeaderboardEntry } from "../lib/types";
-import { Avatar, PodiumAvatarStack, SectionTitle, Pill } from "../components/ui";
+import { Avatar, PodiumAvatarStack, SectionTitle, Pill, ProfileModal } from "../components/ui";
 
 function FilterChip({
   active,
@@ -52,6 +52,7 @@ export default function Leaderboard() {
   const { data, isLoading, isError } = useGlobalLeaderboard();
   const { user } = useAuth();
   const [scoreMode, setScoreMode] = useState<"finished" | "live">("finished");
+  const [profileModal, setProfileModal] = useState<{ userId: string; nickname: string; avatarUrl?: string | null; fullName?: string; points?: number; rank?: number } | null>(null);
 
   const ranked = useMemo(() => {
     const list = (data ?? []).map((m) => ({
@@ -120,6 +121,18 @@ export default function Leaderboard() {
 
   return (
     <div>
+      {profileModal && (
+        <ProfileModal
+          userId={profileModal.userId}
+          nickname={profileModal.nickname}
+          avatarUrl={profileModal.avatarUrl}
+          fullName={profileModal.fullName}
+          points={profileModal.points}
+          rank={profileModal.rank}
+          contextLabel="Global rank"
+          onClose={() => setProfileModal(null)}
+        />
+      )}
       <SectionTitle
         kicker="ALL PLAYERS"
         title="Global Leaderboard"
@@ -196,11 +209,23 @@ export default function Leaderboard() {
                   flexShrink: 0,
                 }}
               >
-                <PodiumAvatarStack
-                  members={group}
-                  size={pos === 0 ? 42 : 34}
-                  currentUserId={user?.id}
-                />
+                <div
+                  style={{ cursor: group.length === 1 ? "pointer" : "default" }}
+                  onClick={() => group.length === 1 && setProfileModal({
+                    userId: group[0].user_id,
+                    nickname: group[0].nickname,
+                    avatarUrl: group[0].avatar_url,
+                    fullName: [group[0].first_name, group[0].last_name].filter(Boolean).join(" ") || undefined,
+                    points: group[0].points,
+                    rank: group[0].rank,
+                  })}
+                >
+                  <PodiumAvatarStack
+                    members={group}
+                    size={pos === 0 ? 42 : 34}
+                    currentUserId={user?.id}
+                  />
+                </div>
                 <div
                   style={{
                     fontFamily: "var(--font-display)",
@@ -282,7 +307,7 @@ export default function Leaderboard() {
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
               <tr>
-                {["#", "Player", scoreMode === "live" ? "Live pts" : "Points"].map(
+                {["Pos", "Rank", "Player", scoreMode === "live" ? "Live pts" : "Points"].map(
                   (h) => (
                     <th
                       key={h}
@@ -305,7 +330,7 @@ export default function Leaderboard() {
               </tr>
             </thead>
             <tbody>
-              {ranked.map((member: LeaderboardEntry) => {
+              {ranked.map((member: LeaderboardEntry, pos) => {
                 const isMe = member.user_id === user?.id;
                 const medals: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" };
                 return (
@@ -317,6 +342,19 @@ export default function Leaderboard() {
                         : undefined,
                     }}
                   >
+                    <td
+                      style={{
+                        padding: "12px 16px",
+                        borderBottom: "1px solid var(--line)",
+                        textAlign: "center",
+                        fontFamily: "var(--font-mono)",
+                        fontWeight: 700,
+                        color: "var(--faint)",
+                        fontSize: 13,
+                      }}
+                    >
+                      {pos + 1}
+                    </td>
                     <td
                       style={{
                         padding: "12px 16px",
@@ -337,7 +375,18 @@ export default function Leaderboard() {
                         fontSize: 14,
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button
+                        type="button"
+                        onClick={() => setProfileModal({
+                          userId: member.user_id,
+                          nickname: member.nickname,
+                          avatarUrl: member.avatar_url,
+                          fullName: [member.first_name, member.last_name].filter(Boolean).join(" ") || undefined,
+                          points: member.points,
+                          rank: member.rank,
+                        })}
+                        style={{ display: "flex", alignItems: "center", gap: 10, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left", width: "100%" }}
+                      >
                         <Avatar nickname={member.nickname} size={28} you={isMe} src={member.avatar_url} />
                         <div style={{ minWidth: 0 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -387,7 +436,7 @@ export default function Leaderboard() {
                             </div>
                           )}
                         </div>
-                      </div>
+                      </button>
                     </td>
                     <td
                       style={{

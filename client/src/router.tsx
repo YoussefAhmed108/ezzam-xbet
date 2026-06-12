@@ -14,6 +14,7 @@ import Groups from "./routes/Groups";
 import GroupDetail from "./routes/GroupDetail";
 import Leaderboard from "./routes/Leaderboard";
 import Profile from "./routes/Profile";
+import PlayerProfile from "./routes/PlayerProfile";
 
 export interface RouterContext {
   auth: ReturnType<typeof useAuth>;
@@ -88,6 +89,12 @@ const profileRoute = createRoute({
   component: Profile,
 });
 
+const playerProfileRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: "/players/$userId",
+  component: PlayerProfile,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -98,6 +105,7 @@ const routeTree = rootRoute.addChildren([
     groupDetailRoute,
     leaderboardRoute,
     profileRoute,
+    playerProfileRoute,
   ]),
 ]);
 
