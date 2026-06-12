@@ -57,6 +57,64 @@ export function Avatar({
   );
 }
 
+// ── PodiumAvatarStack ──────────────────────────────────────────────────────
+export function PodiumAvatarStack({
+  members,
+  size,
+  currentUserId,
+}: {
+  members: { user_id: string; nickname: string }[];
+  size: number;
+  currentUserId?: string;
+}) {
+  const MAX = 3;
+  const visible = members.slice(0, MAX);
+  const overflow = members.length - MAX;
+  const overlap = Math.round(size * 0.28);
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+      {visible.map((m, i) => (
+        <div
+          key={m.user_id}
+          style={{
+            marginLeft: i === 0 ? 0 : -overlap,
+            zIndex: visible.length - i,
+            position: "relative",
+            borderRadius: "50%",
+            boxShadow: "0 0 0 2.5px var(--bg2)",
+          }}
+        >
+          <Avatar nickname={m.nickname} size={size} you={m.user_id === currentUserId} />
+        </div>
+      ))}
+      {overflow > 0 && (
+        <div
+          style={{
+            marginLeft: -overlap,
+            zIndex: 0,
+            position: "relative",
+            width: size,
+            height: size,
+            borderRadius: "50%",
+            boxShadow: "0 0 0 2.5px var(--bg2)",
+            background: "var(--surface2)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-display)",
+            fontWeight: 800,
+            fontSize: Math.round(size * 0.3),
+            color: "var(--muted)",
+          }}
+        >
+          +{overflow}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── FlagBadge ──────────────────────────────────────────────────────────────
 export function FlagBadge({
   src,

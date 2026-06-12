@@ -15,7 +15,7 @@ import {
 } from "../lib/queries";
 import { useAuth } from "../lib/auth";
 import type { GroupMember, Match, MatchPredictions } from "../lib/types";
-import { Avatar, FlagBadge } from "../components/ui";
+import { Avatar, FlagBadge, PodiumAvatarStack } from "../components/ui";
 
 const columnHelper = createColumnHelper<GroupMember>();
 
@@ -152,7 +152,11 @@ export default function GroupDetail() {
       points: scoreMode === "live" ? m.live_points : m.points,
     }));
     ranked.sort((a, b) => b.points - a.points);
-    return ranked.map((m, i) => ({ ...m, rank: i + 1 }));
+    let rank = 1;
+    return ranked.map((m, i) => {
+      if (i > 0 && m.points < ranked[i - 1].points) rank = i + 1;
+      return { ...m, rank };
+    });
   }, [rawMembers, scoreMode]);
 
   const hasLiveDelta = rawMembers.some((m) => m.live_points !== m.points);
@@ -218,10 +222,21 @@ export default function GroupDetail() {
     await navigate({ to: "/groups" });
   };
 
-  // Podium data (top 3)
-  const podium = data.slice(0, 3);
-  const podiumHeights = [104, 80, 64]; // by rank: gold tallest, then silver, bronze
-  const podiumOrder = [1, 0, 2]; // silver, gold, bronze display order
+  const podiumGroups = useMemo(() => {
+    const groups: (typeof data[number])[][] = [];
+    let lastRank = -1;
+    for (const m of data) {
+      if (m.rank !== lastRank) {
+        if (groups.length >= 3) break;
+        groups.push([]);
+        lastRank = m.rank;
+      }
+      groups[groups.length - 1].push(m);
+    }
+    return groups;
+  }, [data]);
+  const podiumHeights = [104, 80, 64];
+  const podiumOrder = [1, 0, 2];
 
   return (
     <div>
@@ -407,8 +422,8 @@ export default function GroupDetail() {
             </span>
           </div>
 
-          {/* Podium (top 3) — only once there are real points to rank by */}
-          {podium.length >= 2 && podium[0].points > 0 && (
+          {/* Podium — only once there are real points to rank by */}
+          {podiumGroups.length >= 2 && podiumGroups[0][0].points > 0 && (
             <div
               style={{
                 display: "flex",
@@ -420,33 +435,32 @@ export default function GroupDetail() {
               }}
             >
               {podiumOrder.map((pos) => {
-                const member = podium[pos];
-                if (!member) return null;
+                const group = podiumGroups[pos];
+                if (!group) return null;
                 const height = podiumHeights[pos];
-                const medalColors = [
-                  "var(--yellow)",
-                  "var(--muted)",
-                  "var(--orange)",
-                ];
+                const medalColors = ["var(--yellow)", "var(--muted)", "var(--orange)"];
                 const barColors = [
                   "color-mix(in oklab, var(--yellow) 22%, transparent)",
                   "color-mix(in oklab, var(--muted) 15%, transparent)",
                   "color-mix(in oklab, var(--orange) 18%, transparent)",
                 ];
-                const isMe = member.user_id === user?.id;
                 return (
                   <div
-                    key={member.user_id}
+                    key={pos}
                     style={{
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
                       gap: 8,
-                      width: pos === 0 ? 110 : 92,
+                      width: pos === 0 ? 120 : 100,
                       flexShrink: 0,
                     }}
                   >
-                    <Avatar nickname={member.nickname} size={pos === 0 ? 42 : 34} you={isMe} />
+                    <PodiumAvatarStack
+                      members={group}
+                      size={pos === 0 ? 42 : 34}
+                      currentUserId={user?.id}
+                    />
                     <div
                       style={{
                         fontFamily: "var(--font-display)",
@@ -454,13 +468,17 @@ export default function GroupDetail() {
                         fontSize: pos === 0 ? 13.5 : 12,
                         color: "var(--text)",
                         textAlign: "center",
-                        maxWidth: 90,
+                        maxWidth: pos === 0 ? 116 : 96,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         whiteSpace: "nowrap",
                       }}
                     >
-                      {member.nickname}
+                      {group.length === 1
+                        ? group[0].nickname
+                        : group.length === 2
+                        ? `${group[0].nickname} & ${group[1].nickname}`
+                        : `${group[0].nickname} +${group.length - 1}`}
                     </div>
                     <div
                       style={{
@@ -470,7 +488,7 @@ export default function GroupDetail() {
                         color: medalColors[pos],
                       }}
                     >
-                      {member.points} pts
+                      {group[0].points} pts
                     </div>
                     <div
                       style={{

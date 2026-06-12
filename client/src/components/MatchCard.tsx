@@ -509,7 +509,7 @@ export default function MatchCard({
             style={{
               display: "flex",
               flexDirection: "column",
-              alignItems: "flex-end",
+              alignItems: "center",
               gap: 4,
               paddingLeft: 16,
               borderLeft: "1px solid var(--line)",
@@ -546,7 +546,7 @@ export default function MatchCard({
                 )}
               </>
             ) : (
-              match.status === "scheduled" && (
+              match.status === "scheduled" && !match.locked && (
                 <span
                   style={{
                     display: "inline-flex",

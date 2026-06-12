@@ -6,10 +6,11 @@ import { Avatar, Wordmark } from "./ui";
 const NAV_ITEMS = [
   { to: "/matches", label: "Predict", icon: "matches" as const },
   { to: "/groups", label: "Groups", icon: "groups" as const },
+  { to: "/leaderboard", label: "Rankings", icon: "leaderboard" as const },
   { to: "/profile", label: "Profile", icon: "profile" as const },
 ];
 
-function NavIcon({ icon, active }: { icon: "matches" | "groups" | "profile"; active: boolean }) {
+function NavIcon({ icon, active }: { icon: "matches" | "groups" | "leaderboard" | "profile"; active: boolean }) {
   const color = active ? "var(--primary)" : "var(--muted)";
   if (icon === "matches") {
     return (
@@ -25,6 +26,15 @@ function NavIcon({ icon, active }: { icon: "matches" | "groups" | "profile"; act
         <circle cx="9" cy="9" r="3.4" />
         <path d="M3.5 19a5.5 5.5 0 0111 0" />
         <path d="M16 6.2A3.4 3.4 0 0118 12.6M16.5 14a5.5 5.5 0 014 5" />
+      </svg>
+    );
+  }
+  if (icon === "leaderboard") {
+    return (
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="14" width="4" height="8" rx="1" />
+        <rect x="10" y="9" width="4" height="13" rx="1" />
+        <rect x="18" y="4" width="4" height="18" rx="1" />
       </svg>
     );
   }

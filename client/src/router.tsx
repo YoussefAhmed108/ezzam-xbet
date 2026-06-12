@@ -12,6 +12,7 @@ import Signup from "./routes/Signup";
 import Matches from "./routes/Matches";
 import Groups from "./routes/Groups";
 import GroupDetail from "./routes/GroupDetail";
+import Leaderboard from "./routes/Leaderboard";
 import Profile from "./routes/Profile";
 
 export interface RouterContext {
@@ -75,6 +76,12 @@ const groupDetailRoute = createRoute({
   component: GroupDetail,
 });
 
+const leaderboardRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: "/leaderboard",
+  component: Leaderboard,
+});
+
 const profileRoute = createRoute({
   getParentRoute: () => authLayoutRoute,
   path: "/profile",
@@ -89,6 +96,7 @@ const routeTree = rootRoute.addChildren([
     matchesRoute,
     groupsRoute,
     groupDetailRoute,
+    leaderboardRoute,
     profileRoute,
   ]),
 ]);

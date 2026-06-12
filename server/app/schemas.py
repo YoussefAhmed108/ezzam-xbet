@@ -94,6 +94,11 @@ class GroupMemberOut(BaseModel):
     rank: int
 
 
+class LeaderboardEntryOut(GroupMemberOut):
+    first_name: str = ""
+    last_name: str = ""
+
+
 class GroupOut(BaseModel):
     id: str
     name: str

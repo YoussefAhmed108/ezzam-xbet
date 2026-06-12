@@ -49,6 +49,11 @@ export interface GroupMember {
   rank: number;
 }
 
+export interface LeaderboardEntry extends GroupMember {
+  first_name: string;
+  last_name: string;
+}
+
 export interface Group {
   id: string;
   name: string;

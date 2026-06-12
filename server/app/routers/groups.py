@@ -82,8 +82,11 @@ async def _group_out(db: AsyncIOMotorDatabase, group: dict) -> dict:
             }
         )
     members.sort(key=lambda m: m["points"], reverse=True)
-    for idx, m in enumerate(members, start=1):
-        m["rank"] = idx
+    rank = 1
+    for i, m in enumerate(members):
+        if i > 0 and m["points"] < members[i - 1]["points"]:
+            rank = i + 1
+        m["rank"] = rank
     return {
         "id": str(group["_id"]),
         "name": group["name"],

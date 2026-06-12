@@ -6,6 +6,7 @@ import {
 import { apiFetch } from "./api";
 import type {
   Group,
+  LeaderboardEntry,
   Match,
   MatchPredictions,
   Prediction,
@@ -17,6 +18,7 @@ export const queryKeys = {
   groups: ["groups"] as const,
   group: (id: string) => ["groups", id] as const,
   groupPredictions: (id: string) => ["groups", id, "predictions"] as const,
+  leaderboard: ["leaderboard"] as const,
   me: ["me"] as const,
 };
 
@@ -94,6 +96,14 @@ export function useJoinGroup() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.groups });
     },
+  });
+}
+
+export function useGlobalLeaderboard() {
+  return useQuery({
+    queryKey: queryKeys.leaderboard,
+    queryFn: () => apiFetch<LeaderboardEntry[]>("/leaderboard"),
+    refetchInterval: 60_000,
   });
 }
 
