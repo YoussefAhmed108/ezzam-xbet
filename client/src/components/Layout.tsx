@@ -192,8 +192,10 @@ export default function Layout() {
         className="mobile-header"
         style={{
           display: "none",
-          position: "sticky",
+          position: "fixed",
           top: 0,
+          left: 0,
+          right: 0,
           zIndex: 20,
           background: "var(--bg2)",
           borderBottom: "1px solid var(--line)",
@@ -201,6 +203,7 @@ export default function Layout() {
           height: 56,
           alignItems: "center",
           justifyContent: "space-between",
+          boxSizing: "border-box",
         }}
       >
         <Wordmark size={0.9} />
@@ -288,18 +291,23 @@ export default function Layout() {
       {/* ── Responsive styles ── */}
       <style>{`
         @media (max-width: 900px) {
-          body { overflow: auto !important; }
-          .app-root { flex-direction: column !important; min-height: 100vh; }
+          html { overflow-x: hidden !important; }
+          body { overflow-x: hidden !important; overflow-y: auto !important; }
+          .app-root { flex-direction: column !important; min-height: 100vh; max-width: 100vw; overflow-x: hidden; }
           .sidebar-desktop { display: none !important; }
           .mobile-header   { display: flex !important; }
           .mobile-bottom-nav { display: block !important; }
           .main-content {
             margin-left: 0 !important;
             height: auto !important;
-            overflow: visible !important;
-            max-width: 100% !important;
-            padding: 16px 14px 96px !important;
+            overflow-x: hidden !important;
+            overflow-y: visible !important;
+            max-width: 100vw !important;
+            width: 100% !important;
+            box-sizing: border-box !important;
+            padding: 72px 14px 96px !important;
           }
+          table td, table th { padding: 10px 8px !important; }
         }
       `}</style>
     </div>
