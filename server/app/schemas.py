@@ -98,6 +98,7 @@ class GroupMemberOut(BaseModel):
 class LeaderboardEntryOut(GroupMemberOut):
     first_name: str = ""
     last_name: str = ""
+    avatar_url: Optional[str] = None
 
 
 class GroupOut(BaseModel):

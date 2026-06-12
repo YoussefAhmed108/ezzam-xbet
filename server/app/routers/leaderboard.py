@@ -14,7 +14,7 @@ async def global_leaderboard(
     db: AsyncIOMotorDatabase = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    users = [u async for u in db.users.find({}, {"nickname": 1, "total_points": 1, "first_name": 1, "last_name": 1})]
+    users = [u async for u in db.users.find({}, {"nickname": 1, "total_points": 1, "first_name": 1, "last_name": 1, "avatar_url": 1})]
     all_ids = [u["_id"] for u in users]
     live_extra = await _live_points_by_user(db, all_ids)
 
@@ -27,6 +27,7 @@ async def global_leaderboard(
                 "nickname": u["nickname"],
                 "first_name": u.get("first_name", ""),
                 "last_name": u.get("last_name", ""),
+                "avatar_url": u.get("avatar_url"),
                 "points": finished,
                 "live_points": finished + live_extra.get(u["_id"], 0),
                 "rank": 0,

@@ -75,7 +75,7 @@ export function PodiumAvatarStack({
   size,
   currentUserId,
 }: {
-  members: { user_id: string; nickname: string }[];
+  members: { user_id: string; nickname: string; avatar_url?: string | null }[];
   size: number;
   currentUserId?: string;
 }) {
@@ -97,7 +97,7 @@ export function PodiumAvatarStack({
             boxShadow: "0 0 0 2.5px var(--bg2)",
           }}
         >
-          <Avatar nickname={m.nickname} size={size} you={m.user_id === currentUserId} />
+          <Avatar nickname={m.nickname} size={size} you={m.user_id === currentUserId} src={m.avatar_url} />
         </div>
       ))}
       {overflow > 0 && (

@@ -53,6 +53,7 @@ export interface GroupMember {
 export interface LeaderboardEntry extends GroupMember {
   first_name: string;
   last_name: string;
+  avatar_url?: string | null;
 }
 
 export interface Group {
