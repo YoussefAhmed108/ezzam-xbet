@@ -5,6 +5,7 @@ from ..db import get_db
 from ..deps import get_current_user
 from ..routers.groups import _live_points_by_user
 from ..schemas import LeaderboardEntryOut
+from ..serializers import _proxy_avatar
 
 router = APIRouter(prefix="/leaderboard", tags=["leaderboard"])
 
@@ -27,7 +28,7 @@ async def global_leaderboard(
                 "nickname": u["nickname"],
                 "first_name": u.get("first_name", ""),
                 "last_name": u.get("last_name", ""),
-                "avatar_url": u.get("avatar_url"),
+                "avatar_url": _proxy_avatar(u.get("avatar_url")),
                 "points": finished,
                 "live_points": finished + live_extra.get(u["_id"], 0),
                 "rank": 0,

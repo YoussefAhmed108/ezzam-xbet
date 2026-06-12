@@ -5,6 +5,21 @@ from datetime import datetime, timedelta, timezone
 from .config import settings
 
 
+def _proxy_avatar(raw: str | None) -> str | None:
+    """Rewrite r2.dev public URLs to go through the API proxy.
+
+    r2.dev subdomains have geographic access restrictions in some regions.
+    When API_BASE_URL is configured we route images through /upload/proxy/
+    instead, which reaches users globally via the API's CDN.
+    """
+    if not raw or not settings.api_base_url:
+        return raw
+    if ".r2.dev/" in raw:
+        key = raw.split(".r2.dev/", 1)[-1]
+        return f"{settings.api_base_url.rstrip('/')}/upload/proxy/{key}"
+    return raw
+
+
 def user_public(doc: dict) -> dict:
     return {
         "id": str(doc["_id"]),
@@ -13,7 +28,7 @@ def user_public(doc: dict) -> dict:
         "first_name": doc["first_name"],
         "last_name": doc["last_name"],
         "total_points": doc.get("total_points", 0),
-        "avatar_url": doc.get("avatar_url"),
+        "avatar_url": _proxy_avatar(doc.get("avatar_url")),
     }
 
 

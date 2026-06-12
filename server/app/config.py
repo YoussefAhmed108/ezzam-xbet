@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     r2_bucket_name: str = "ezzam-xbet"
     r2_public_url: str = ""  # e.g. https://pub-xxxx.r2.dev or custom domain
 
+    # Public base URL of this API server (used to build proxy image URLs).
+    # Set to e.g. https://your-api.railway.app — leave blank to fall back to r2_public_url.
+    api_base_url: str = ""
+
     # Admin
     admin_sync_token: str = ""
 

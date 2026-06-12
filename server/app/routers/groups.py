@@ -17,7 +17,7 @@ from ..schemas import (
     MatchPredictionsOut,
 )
 from ..scoring import calculate_points
-from ..serializers import match_out
+from ..serializers import match_out, _proxy_avatar
 
 router = APIRouter(prefix="/groups", tags=["groups"])
 
@@ -77,7 +77,7 @@ async def _group_out(db: AsyncIOMotorDatabase, group: dict) -> dict:
             {
                 "user_id": str(u["_id"]),
                 "nickname": u["nickname"],
-                "avatar_url": u.get("avatar_url"),
+                "avatar_url": _proxy_avatar(u.get("avatar_url")),
                 "points": finished_points,
                 "live_points": finished_points + live_extra.get(u["_id"], 0),
             }

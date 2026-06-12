@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from ..config import settings
 from ..db import get_db
 from ..deps import get_current_user
-from ..serializers import match_out
+from ..serializers import match_out, _proxy_avatar
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -34,7 +34,7 @@ async def user_stats(user_id: str, db=Depends(get_db), _=Depends(get_current_use
         "nickname": user["nickname"],
         "first_name": user.get("first_name", ""),
         "last_name": user.get("last_name", ""),
-        "avatar_url": user.get("avatar_url"),
+        "avatar_url": _proxy_avatar(user.get("avatar_url")),
         "total_points": user.get("total_points", 0),
         "exact": exact,
         "outcome": outcome,
