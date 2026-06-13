@@ -5,6 +5,8 @@ import {
 } from "@tanstack/react-query";
 import { apiFetch } from "./api";
 import type {
+  AdminMatchPrediction,
+  AdminUser,
   Group,
   LeaderboardEntry,
   Match,
@@ -125,6 +127,37 @@ export function useUserStats(userId: string | null) {
     queryFn: () => apiFetch<UserStats>(`/users/${userId}/stats`),
     enabled: !!userId,
     staleTime: 30_000,
+  });
+}
+
+export function useAdminUsers() {
+  return useQuery({
+    queryKey: ["admin", "users"],
+    queryFn: () => apiFetch<AdminUser[]>("/admin/users"),
+  });
+}
+
+export function useAdminUserPredictions(userId: string | null) {
+  return useQuery({
+    queryKey: ["admin", "predictions", userId],
+    queryFn: () => apiFetch<AdminMatchPrediction[]>(`/admin/users/${userId}/predictions`),
+    enabled: !!userId,
+  });
+}
+
+export function useAdminSetPrediction() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ userId, matchId, homeScore, awayScore }: { userId: string; matchId: string; homeScore: number; awayScore: number }) =>
+      apiFetch(`/admin/predictions/${userId}/${matchId}`, {
+        method: "PATCH",
+        body: { home_score: homeScore, away_score: awayScore },
+      }),
+    onSuccess: (_, { userId }) => {
+      void qc.invalidateQueries({ queryKey: ["admin", "predictions", userId] });
+      void qc.invalidateQueries({ queryKey: ["admin", "users"] });
+      void qc.invalidateQueries({ queryKey: queryKeys.leaderboard });
+    },
   });
 }
 

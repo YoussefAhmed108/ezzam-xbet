@@ -15,6 +15,7 @@ import GroupDetail from "./routes/GroupDetail";
 import Leaderboard from "./routes/Leaderboard";
 import Profile from "./routes/Profile";
 import PlayerProfile from "./routes/PlayerProfile";
+import Admin from "./routes/Admin";
 
 export interface RouterContext {
   auth: ReturnType<typeof useAuth>;
@@ -95,6 +96,17 @@ const playerProfileRoute = createRoute({
   component: PlayerProfile,
 });
 
+const adminRoute = createRoute({
+  getParentRoute: () => authLayoutRoute,
+  path: "/admin",
+  beforeLoad: ({ context }) => {
+    if (context.auth.user?.email !== "youssef.ahmed108@gmail.com") {
+      throw redirect({ to: "/matches" });
+    }
+  },
+  component: Admin,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   loginRoute,
@@ -106,6 +118,7 @@ const routeTree = rootRoute.addChildren([
     leaderboardRoute,
     profileRoute,
     playerProfileRoute,
+    adminRoute,
   ]),
 ]);
 

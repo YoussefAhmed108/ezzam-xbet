@@ -37,3 +37,12 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found"
         )
     return user
+
+
+ADMIN_EMAIL = "youssef.ahmed108@gmail.com"
+
+
+async def get_admin_user(current_user: dict = Depends(get_current_user)) -> dict:
+    if current_user.get("email") != ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Admin only.")
+    return current_user

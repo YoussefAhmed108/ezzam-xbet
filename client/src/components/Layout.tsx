@@ -122,6 +122,34 @@ export default function Layout() {
               </Link>
             );
           })}
+          {user?.email === "youssef.ahmed108@gmail.com" && (
+            <Link
+              to="/admin"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 12px",
+                borderRadius: "var(--r-sm)",
+                background: currentPath.startsWith("/admin") ? "color-mix(in oklab, var(--yellow) 15%, transparent)" : "transparent",
+                color: currentPath.startsWith("/admin") ? "var(--yellow)" : "var(--muted)",
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                fontSize: 14,
+                textDecoration: "none",
+                transition: "background 0.12s, color 0.12s",
+                marginTop: 8,
+                borderTop: "1px solid var(--line)",
+                paddingTop: 18,
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+                <path d="M12 8v4l3 3" />
+              </svg>
+              Admin
+            </Link>
+          )}
         </nav>
 
         {/* User card at bottom */}

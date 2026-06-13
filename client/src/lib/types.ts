@@ -66,6 +66,26 @@ export interface Group {
   members: GroupMember[];
 }
 
+export interface AdminUser {
+  id: string;
+  nickname: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  total_points: number;
+  avatar_url?: string | null;
+}
+
+export interface AdminMatchPrediction {
+  match: Match;
+  prediction: {
+    home_score: number;
+    away_score: number;
+    points: number | null;
+    scored: boolean;
+  } | null;
+}
+
 export interface UserPredictionEntry {
   match: Match;
   home_score: number;
