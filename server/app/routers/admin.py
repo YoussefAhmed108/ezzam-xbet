@@ -4,12 +4,14 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from fastapi import APIRouter, Depends, Header, HTTPException
 from motor.motor_asyncio import AsyncIOMotorDatabase
+from typing import Optional
+
 from pydantic import BaseModel
 
 from ..config import settings
 from ..db import get_db
 from ..deps import get_admin_user, get_current_user
-from ..scoring import calculate_points
+from ..scoring import calculate_points, calculate_points_knockout, is_knockout_stage
 from ..serializers import match_out, _proxy_avatar
 from ..services.sync_service import sync_and_score
 
@@ -82,6 +84,8 @@ async def admin_user_predictions(
             "prediction": {
                 "home_score": p["home_score"],
                 "away_score": p["away_score"],
+                "pen_home": p.get("pen_home"),
+                "pen_away": p.get("pen_away"),
                 "points": p.get("points"),
                 "scored": p.get("scored", False),
             } if p else None,
@@ -92,6 +96,8 @@ async def admin_user_predictions(
 class PredictionEdit(BaseModel):
     home_score: int
     away_score: int
+    pen_home: Optional[int] = None
+    pen_away: Optional[int] = None
 
 
 @router.patch("/predictions/{user_id}/{match_id}")
@@ -118,10 +124,18 @@ async def admin_set_prediction(
     new_points = None
     new_scored = False
     if match.get("status") == "finished" and match.get("home_score") is not None:
-        new_points = calculate_points(
-            payload.home_score, payload.away_score,
-            match["home_score"], match["away_score"],
-        )
+        if is_knockout_stage(match.get("stage")):
+            new_points = calculate_points_knockout(
+                payload.home_score, payload.away_score,
+                match["home_score"], match["away_score"],
+                payload.pen_home, payload.pen_away,
+                match.get("pen_home"), match.get("pen_away"),
+            )
+        else:
+            new_points = calculate_points(
+                payload.home_score, payload.away_score,
+                match["home_score"], match["away_score"],
+            )
         new_scored = True
 
     await db.predictions.update_one(
@@ -131,6 +145,8 @@ async def admin_set_prediction(
             "match_id": match_oid,
             "home_score": payload.home_score,
             "away_score": payload.away_score,
+            "pen_home": payload.pen_home,
+            "pen_away": payload.pen_away,
             "points": new_points,
             "scored": new_scored,
             "updated_at": datetime.now(timezone.utc),
@@ -142,4 +158,4 @@ async def admin_set_prediction(
     if delta != 0:
         await db.users.update_one({"_id": user_oid}, {"$inc": {"total_points": delta}})
 
-    return {"home_score": payload.home_score, "away_score": payload.away_score, "points": new_points, "scored": new_scored}
+    return {"home_score": payload.home_score, "away_score": payload.away_score, "pen_home": payload.pen_home, "pen_away": payload.pen_away, "points": new_points, "scored": new_scored}

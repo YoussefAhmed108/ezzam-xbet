@@ -63,6 +63,8 @@ def match_out(doc: dict) -> dict:
         "status": doc.get("status", "scheduled"),
         "home_score": doc.get("home_score"),
         "away_score": doc.get("away_score"),
+        "pen_home": doc.get("pen_home"),
+        "pen_away": doc.get("pen_away"),
         "locked": match_is_locked(doc["kickoff"]),
     }
 
@@ -73,6 +75,8 @@ def prediction_out(doc: dict) -> dict:
         "match_id": str(doc["match_id"]),
         "home_score": doc["home_score"],
         "away_score": doc["away_score"],
+        "pen_home": doc.get("pen_home"),
+        "pen_away": doc.get("pen_away"),
         "points": doc.get("points"),
         "scored": doc.get("scored", False),
         "updated_at": _as_utc(doc["updated_at"]) if doc.get("updated_at") else None,

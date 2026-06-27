@@ -49,6 +49,8 @@ export function useSubmitPrediction() {
       match_id: string;
       home_score: number;
       away_score: number;
+      pen_home?: number | null;
+      pen_away?: number | null;
     }) => apiFetch<Prediction>("/predictions", { method: "POST", body: input }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: queryKeys.predictions });

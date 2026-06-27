@@ -50,6 +50,8 @@ async def submit_prediction(
             "$set": {
                 "home_score": payload.home_score,
                 "away_score": payload.away_score,
+                "pen_home": payload.pen_home,
+                "pen_away": payload.pen_away,
                 "updated_at": now,
             },
             "$setOnInsert": {

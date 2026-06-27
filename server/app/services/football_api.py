@@ -32,6 +32,8 @@ class NormalizedMatch:
     status: str  # "scheduled" | "live" | "finished"
     home_score: Optional[int]
     away_score: Optional[int]
+    pen_home: Optional[int] = None
+    pen_away: Optional[int] = None
 
 
 def _parse_dt(value: str) -> datetime:
@@ -98,11 +100,18 @@ class FootballAPIClient:
             score = m.get("score") or {}
             full = score.get("fullTime") or {}
             half = score.get("halfTime") or {}
+            extra = score.get("extraTime") or {}
+            pens = score.get("penalties") or {}
             api_status = m.get("status", "")
             norm_status = status_map.get(api_status, "scheduled")
-            # During PAUSED (half-time), fullTime holds the HT score
-            home_score = full.get("home") if full.get("home") is not None else half.get("home")
-            away_score = full.get("away") if full.get("away") is not None else half.get("away")
+            # Treat AET score as the match score: extraTime if set, else fullTime.
+            # During PAUSED (half-time), fullTime holds the HT score so we fall back to it.
+            if extra.get("home") is not None:
+                home_score = extra.get("home")
+                away_score = extra.get("away")
+            else:
+                home_score = full.get("home") if full.get("home") is not None else half.get("home")
+                away_score = full.get("away") if full.get("away") is not None else half.get("away")
             out.append(
                 NormalizedMatch(
                     external_id=str(m["id"]),
@@ -116,6 +125,8 @@ class FootballAPIClient:
                     status=norm_status,
                     home_score=home_score,
                     away_score=away_score,
+                    pen_home=pens.get("home"),
+                    pen_away=pens.get("away"),
                 )
             )
         return out
@@ -150,6 +161,7 @@ class FootballAPIClient:
             fixture = item.get("fixture") or {}
             teams = item.get("teams") or {}
             goals = item.get("goals") or {}
+            score_data = item.get("score") or {}
             league = item.get("league") or {}
             fix_status = fixture.get("status") or {}
             short = fix_status.get("short", "NS")
@@ -159,6 +171,7 @@ class FootballAPIClient:
                 status = "live"
             else:
                 status = "scheduled"
+            penalty_data = score_data.get("penalty") or {}
             out.append(
                 NormalizedMatch(
                     external_id=str(fixture["id"]),
@@ -172,6 +185,8 @@ class FootballAPIClient:
                     status=status,
                     home_score=goals.get("home"),
                     away_score=goals.get("away"),
+                    pen_home=penalty_data.get("home"),
+                    pen_away=penalty_data.get("away"),
                 )
             )
         return out

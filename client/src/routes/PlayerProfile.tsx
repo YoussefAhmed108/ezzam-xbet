@@ -42,22 +42,16 @@ function FilterChip({
 }
 
 function PredictionRow({ entry }: { entry: UserPredictionEntry }) {
+  const pts = entry.points ?? 0;
   const ptColor =
-    entry.points === 3
+    pts >= 3
       ? "var(--green)"
-      : entry.points === 1
+      : pts >= 1
       ? "var(--yellow)"
       : entry.scored
       ? "var(--muted)"
       : "var(--faint)";
-  const ptLabel =
-    entry.points === 3
-      ? "+3"
-      : entry.points === 1
-      ? "+1"
-      : entry.scored
-      ? "0"
-      : "—";
+  const ptLabel = entry.scored ? (pts > 0 ? `+${pts}` : "0") : "—";
 
   return (
     <div
@@ -172,8 +166,8 @@ export default function PlayerProfile() {
   const filtered = useMemo<UserPredictionEntry[]>(() => {
     if (!predictions) return [];
     switch (filter) {
-      case "exact":    return predictions.filter((p) => p.points === 3);
-      case "correct":  return predictions.filter((p) => p.points === 1);
+      case "exact":    return predictions.filter((p) => (p.points ?? 0) >= 3);
+      case "correct":  return predictions.filter((p) => { const pts = p.points ?? 0; return pts >= 1 && pts < 3; });
       case "missed":   return predictions.filter((p) => p.scored && p.points === 0);
       case "upcoming": return predictions.filter((p) => !p.scored);
       default:         return predictions;
@@ -183,8 +177,8 @@ export default function PlayerProfile() {
   const counts = useMemo(() => {
     if (!predictions) return { exact: 0, correct: 0, missed: 0, upcoming: 0 };
     return {
-      exact:    predictions.filter((p) => p.points === 3).length,
-      correct:  predictions.filter((p) => p.points === 1).length,
+      exact:    predictions.filter((p) => (p.points ?? 0) >= 3).length,
+      correct:  predictions.filter((p) => { const pts = p.points ?? 0; return pts >= 1 && pts < 3; }).length,
       missed:   predictions.filter((p) => p.scored && p.points === 0).length,
       upcoming: predictions.filter((p) => !p.scored).length,
     };

@@ -223,6 +223,8 @@ async def group_predictions(
                     "nickname": nicknames.get(p["user_id"], "Unknown"),
                     "home_score": p["home_score"],
                     "away_score": p["away_score"],
+                    "pen_home": p.get("pen_home"),
+                    "pen_away": p.get("pen_away"),
                     "points": p.get("points"),
                     "scored": p.get("scored", False),
                 }

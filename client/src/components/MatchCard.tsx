@@ -5,6 +5,11 @@ import { ApiError } from "../lib/api";
 import { formatKickoff, formatLabel } from "../lib/format";
 import { FlagBadge } from "./ui";
 
+function isKnockout(stage: string | null): boolean {
+  if (!stage) return false;
+  return !stage.toUpperCase().includes("GROUP");
+}
+
 function StatusTag({ match, dirty }: { match: Match; dirty?: boolean }) {
   if (match.status === "live") {
     return (
@@ -120,7 +125,7 @@ function PointsBadge({ prediction }: { prediction: Prediction }) {
   const pts = prediction.points ?? 0;
   if (!prediction.scored) return null;
 
-  if (pts === 3) {
+  if (pts >= 3) {
     return (
       <span
         style={{
@@ -137,11 +142,11 @@ function PointsBadge({ prediction }: { prediction: Prediction }) {
           textTransform: "uppercase" as const,
         }}
       >
-        EXACT +3
+        EXACT +{pts}
       </span>
     );
   }
-  if (pts === 1) {
+  if (pts >= 1) {
     return (
       <span
         style={{
@@ -158,7 +163,7 @@ function PointsBadge({ prediction }: { prediction: Prediction }) {
           textTransform: "uppercase" as const,
         }}
       >
-        RESULT +1
+        RESULT +{pts}
       </span>
     );
   }
@@ -285,6 +290,12 @@ export default function MatchCard({
   const [away, setAway] = useState<string>(
     prediction ? String(prediction.away_score) : "",
   );
+  const [penHome, setPenHome] = useState<string>(
+    prediction?.pen_home != null ? String(prediction.pen_home) : "",
+  );
+  const [penAway, setPenAway] = useState<string>(
+    prediction?.pen_away != null ? String(prediction.pen_away) : "",
+  );
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
 
@@ -292,17 +303,28 @@ export default function MatchCard({
     if (prediction) {
       setHome(String(prediction.home_score));
       setAway(String(prediction.away_score));
+      setPenHome(prediction.pen_home != null ? String(prediction.pen_home) : "");
+      setPenAway(prediction.pen_away != null ? String(prediction.pen_away) : "");
     }
   }, [prediction]);
 
   const editable = match.status === "scheduled" && !match.locked;
   const isLive = match.status === "live";
   const isFinished = match.status === "finished";
+  const knockout = isKnockout(match.stage);
 
   const savedHome = prediction ? String(prediction.home_score) : "";
   const savedAway = prediction ? String(prediction.away_score) : "";
+  const savedPenHome = prediction?.pen_home != null ? String(prediction.pen_home) : "";
+  const savedPenAway = prediction?.pen_away != null ? String(prediction.pen_away) : "";
   const hasInput = home !== "" && away !== "";
-  const dirty = hasInput && (home !== savedHome || away !== savedAway);
+  const dirty =
+    hasInput &&
+    (home !== savedHome ||
+      away !== savedAway ||
+      penHome !== savedPenHome ||
+      penAway !== savedPenAway);
+  const penDirty = penHome !== savedPenHome || penAway !== savedPenAway;
 
   const onSave = async () => {
     setError(null);
@@ -312,11 +334,16 @@ export default function MatchCard({
       setError("Enter both scores");
       return;
     }
+    const ph = penHome !== "" ? parseInt(penHome, 10) : null;
+    const pa = penAway !== "" ? parseInt(penAway, 10) : null;
+    const hasBothPens = ph !== null && !isNaN(ph) && pa !== null && !isNaN(pa);
     try {
       await submit.mutateAsync({
         match_id: match.id,
         home_score: h,
         away_score: a,
+        pen_home: hasBothPens ? ph : null,
+        pen_away: hasBothPens ? pa : null,
       });
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
@@ -324,6 +351,8 @@ export default function MatchCard({
       setError(err instanceof ApiError ? err.message : "Could not save");
     }
   };
+
+  const hasPenResult = match.pen_home != null && match.pen_away != null;
 
   return (
     <div
@@ -446,6 +475,39 @@ export default function MatchCard({
                 <span style={{ color: "var(--muted)", margin: "0 5px" }}>:</span>
                 {match.away_score ?? 0}
               </div>
+              {hasPenResult && (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 9.5,
+                      fontWeight: 700,
+                      color: "var(--muted)",
+                      fontFamily: "var(--font-display)",
+                      textTransform: "uppercase" as const,
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    AET · Pens
+                  </span>
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: "var(--muted)",
+                    }}
+                  >
+                    {match.pen_home} : {match.pen_away}
+                  </span>
+                </div>
+              )}
             </>
           ) : editable ? (
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -453,7 +515,7 @@ export default function MatchCard({
                 value={home}
                 onChange={setHome}
                 ariaLabel={`${match.home_team} score`}
-                dirty={dirty}
+                dirty={dirty && !penDirty}
               />
               <span
                 style={{
@@ -469,7 +531,7 @@ export default function MatchCard({
                 value={away}
                 onChange={setAway}
                 ariaLabel={`${match.away_team} score`}
-                dirty={dirty}
+                dirty={dirty && !penDirty}
               />
             </div>
           ) : (
@@ -543,6 +605,17 @@ export default function MatchCard({
                 >
                   {prediction.home_score} : {prediction.away_score}
                 </span>
+                {prediction.pen_home != null && prediction.pen_away != null && (
+                  <span
+                    style={{
+                      fontFamily: "var(--font-mono)",
+                      fontSize: 11,
+                      color: "var(--muted)",
+                    }}
+                  >
+                    Pens {prediction.pen_home} : {prediction.pen_away}
+                  </span>
+                )}
                 {(isFinished || isLive) && prediction.scored && (
                   <PointsBadge prediction={prediction} />
                 )}
@@ -571,6 +644,67 @@ export default function MatchCard({
           </div>
         )}
       </div>
+
+      {/* Knockout penalty prediction row */}
+      {editable && knockout && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 10,
+            padding: "8px 18px",
+            borderTop: "1px dashed var(--line)",
+            background: "color-mix(in oklab, var(--surface2) 40%, transparent)",
+          }}
+        >
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--muted)",
+              fontFamily: "var(--font-display)",
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.05em",
+              marginRight: 4,
+            }}
+          >
+            Pens
+          </span>
+          <Stepper
+            value={penHome}
+            onChange={setPenHome}
+            ariaLabel={`${match.home_team} penalty score`}
+            dirty={penDirty}
+          />
+          <span
+            style={{
+              color: "var(--muted)",
+              fontWeight: 700,
+              fontFamily: "var(--font-mono)",
+              fontSize: 18,
+            }}
+          >
+            :
+          </span>
+          <Stepper
+            value={penAway}
+            onChange={setPenAway}
+            ariaLabel={`${match.away_team} penalty score`}
+            dirty={penDirty}
+          />
+          <span
+            style={{
+              fontSize: 10.5,
+              color: "var(--faint)",
+              fontFamily: "var(--font-display)",
+              marginLeft: 4,
+            }}
+          >
+            optional · +1 pt
+          </span>
+        </div>
+      )}
 
       {/* Editable save row */}
       {editable && (

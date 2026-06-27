@@ -27,6 +27,12 @@ const SCORING_ROWS = [
     desc: "Correct winner or draw only",
   },
   {
+    pts: "+1",
+    color: "var(--primary)",
+    label: "Penalty bonus",
+    desc: "Knockout: correct penalty score",
+  },
+  {
     pts: "+0",
     color: "var(--muted)",
     label: "Missed",
@@ -113,8 +119,8 @@ export default function Profile() {
   const stats = useMemo(() => {
     const preds = predictionsQuery.data ?? [];
     const scored = preds.filter((p) => p.scored);
-    const exact = scored.filter((p) => p.points === 3).length;
-    const outcome = scored.filter((p) => p.points === 1).length;
+    const exact = scored.filter((p) => (p.points ?? 0) >= 3).length;
+    const outcome = scored.filter((p) => { const pts = p.points ?? 0; return pts >= 1 && pts < 3; }).length;
     const total = matchesQuery.data?.length ?? 0;
     return {
       submitted: preds.length,

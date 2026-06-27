@@ -40,10 +40,11 @@ function PredictionRow({
     }
   };
 
+  const predPts = prediction?.points ?? 0;
   const ptColor =
-    prediction?.points === 3
+    predPts >= 3
       ? "var(--green)"
-      : prediction?.points === 1
+      : predPts >= 1
       ? "var(--yellow)"
       : prediction?.scored
       ? "var(--muted)"
@@ -133,7 +134,7 @@ function PredictionRow({
         textAlign: "center",
         flexShrink: 0,
       }}>
-        {prediction?.scored ? (prediction.points === 3 ? "+3" : prediction.points === 1 ? "+1" : "0") : "—"}
+        {prediction?.scored ? (predPts > 0 ? `+${predPts}` : "0") : "—"}
       </div>
 
       {/* Save */}

@@ -58,6 +58,8 @@ class MatchOut(BaseModel):
     status: MatchStatus
     home_score: Optional[int] = None
     away_score: Optional[int] = None
+    pen_home: Optional[int] = None
+    pen_away: Optional[int] = None
     locked: bool = False  # whether predictions are locked (within the lock window)
 
 
@@ -66,6 +68,8 @@ class PredictionIn(BaseModel):
     match_id: str
     home_score: int = Field(ge=0, le=99)
     away_score: int = Field(ge=0, le=99)
+    pen_home: Optional[int] = Field(default=None, ge=0, le=99)
+    pen_away: Optional[int] = Field(default=None, ge=0, le=99)
 
 
 class PredictionOut(BaseModel):
@@ -73,6 +77,8 @@ class PredictionOut(BaseModel):
     match_id: str
     home_score: int
     away_score: int
+    pen_home: Optional[int] = None
+    pen_away: Optional[int] = None
     points: Optional[int] = None
     scored: bool = False
     updated_at: datetime
@@ -116,6 +122,8 @@ class MemberPredictionOut(BaseModel):
     nickname: str
     home_score: int
     away_score: int
+    pen_home: Optional[int] = None
+    pen_away: Optional[int] = None
     points: Optional[int] = None
     scored: bool = False
 

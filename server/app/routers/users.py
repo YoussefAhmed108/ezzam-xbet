@@ -26,8 +26,8 @@ async def user_stats(user_id: str, db=Depends(get_db), _=Depends(get_current_use
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    exact = await db.predictions.count_documents({"user_id": oid, "scored": True, "points": 3})
-    outcome = await db.predictions.count_documents({"user_id": oid, "scored": True, "points": 1})
+    exact = await db.predictions.count_documents({"user_id": oid, "scored": True, "points": {"$gte": 3}})
+    outcome = await db.predictions.count_documents({"user_id": oid, "scored": True, "points": {"$in": [1, 2]}})
 
     return {
         "user_id": str(user["_id"]),
@@ -73,6 +73,8 @@ async def user_predictions(user_id: str, db=Depends(get_db), _=Depends(get_curre
                 "match": match_out(m),
                 "home_score": p["home_score"],
                 "away_score": p["away_score"],
+                "pen_home": p.get("pen_home"),
+                "pen_away": p.get("pen_away"),
                 "points": p.get("points"),
                 "scored": p.get("scored", False),
             })

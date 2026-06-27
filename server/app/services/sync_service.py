@@ -8,7 +8,7 @@ from datetime import datetime, timedelta, timezone
 from motor.motor_asyncio import AsyncIOMotorDatabase
 
 from ..config import settings
-from ..scoring import calculate_points
+from ..scoring import calculate_points, calculate_points_knockout, is_knockout_stage
 from .football_api import FootballAPIError, NormalizedMatch, football_client
 
 logger = logging.getLogger("sync")
@@ -179,6 +179,8 @@ async def upsert_matches(
                     "status": m.status,
                     "home_score": m.home_score,
                     "away_score": m.away_score,
+                    "pen_home": m.pen_home,
+                    "pen_away": m.pen_away,
                     "updated_at": datetime.now(timezone.utc),
                 }
             },
@@ -207,14 +209,30 @@ async def score_finished_matches(db: AsyncIOMotorDatabase) -> int:
         actual_away = match["away_score"]
         match_id = match["_id"]
 
+        knockout = is_knockout_stage(match.get("stage"))
+        actual_pen_home = match.get("pen_home")
+        actual_pen_away = match.get("pen_away")
+
         preds = db.predictions.find({"match_id": match_id})
         async for pred in preds:
-            new_points = calculate_points(
-                pred["home_score"],
-                pred["away_score"],
-                actual_home,
-                actual_away,
-            )
+            if knockout:
+                new_points = calculate_points_knockout(
+                    pred["home_score"],
+                    pred["away_score"],
+                    actual_home,
+                    actual_away,
+                    pred.get("pen_home"),
+                    pred.get("pen_away"),
+                    actual_pen_home,
+                    actual_pen_away,
+                )
+            else:
+                new_points = calculate_points(
+                    pred["home_score"],
+                    pred["away_score"],
+                    actual_home,
+                    actual_away,
+                )
             old_points = pred.get("points") if pred.get("scored") else None
             if old_points == new_points:
                 continue

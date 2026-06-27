@@ -29,6 +29,8 @@ export interface Match {
   status: MatchStatus;
   home_score: number | null;
   away_score: number | null;
+  pen_home: number | null;
+  pen_away: number | null;
   locked: boolean;
 }
 
@@ -37,6 +39,8 @@ export interface Prediction {
   match_id: string;
   home_score: number;
   away_score: number;
+  pen_home: number | null;
+  pen_away: number | null;
   points: number | null;
   scored: boolean;
   updated_at: string;
@@ -81,6 +85,8 @@ export interface AdminMatchPrediction {
   prediction: {
     home_score: number;
     away_score: number;
+    pen_home: number | null;
+    pen_away: number | null;
     points: number | null;
     scored: boolean;
   } | null;
@@ -90,6 +96,8 @@ export interface UserPredictionEntry {
   match: Match;
   home_score: number;
   away_score: number;
+  pen_home: number | null;
+  pen_away: number | null;
   points: number | null;
   scored: boolean;
 }
@@ -110,6 +118,8 @@ export interface MemberPrediction {
   nickname: string;
   home_score: number;
   away_score: number;
+  pen_home: number | null;
+  pen_away: number | null;
   points: number | null;
   scored: boolean;
 }
