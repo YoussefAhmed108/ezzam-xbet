@@ -296,6 +296,9 @@ export default function MatchCard({
   const [penAway, setPenAway] = useState<string>(
     prediction?.pen_away != null ? String(prediction.pen_away) : "",
   );
+  const [penOpen, setPenOpen] = useState<boolean>(
+    prediction?.pen_home != null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [justSaved, setJustSaved] = useState(false);
 
@@ -303,10 +306,22 @@ export default function MatchCard({
     if (prediction) {
       setHome(String(prediction.home_score));
       setAway(String(prediction.away_score));
-      setPenHome(prediction.pen_home != null ? String(prediction.pen_home) : "");
-      setPenAway(prediction.pen_away != null ? String(prediction.pen_away) : "");
+      if (prediction.pen_home != null) {
+        setPenHome(String(prediction.pen_home));
+        setPenAway(prediction.pen_away != null ? String(prediction.pen_away) : "");
+        setPenOpen(true);
+      } else {
+        setPenHome("");
+        setPenAway("");
+      }
     }
   }, [prediction]);
+
+  const closePen = () => {
+    setPenOpen(false);
+    setPenHome("");
+    setPenAway("");
+  };
 
   const editable = match.status === "scheduled" && !match.locked;
   const isLive = match.status === "live";
@@ -334,8 +349,8 @@ export default function MatchCard({
       setError("Enter both scores");
       return;
     }
-    const ph = penHome !== "" ? parseInt(penHome, 10) : null;
-    const pa = penAway !== "" ? parseInt(penAway, 10) : null;
+    const ph = penOpen && penHome !== "" ? parseInt(penHome, 10) : null;
+    const pa = penOpen && penAway !== "" ? parseInt(penAway, 10) : null;
     const hasBothPens = ph !== null && !isNaN(ph) && pa !== null && !isNaN(pa);
     try {
       await submit.mutateAsync({
@@ -515,7 +530,7 @@ export default function MatchCard({
                 value={home}
                 onChange={setHome}
                 ariaLabel={`${match.home_team} score`}
-                dirty={dirty && !penDirty}
+                dirty={dirty}
               />
               <span
                 style={{
@@ -531,7 +546,7 @@ export default function MatchCard({
                 value={away}
                 onChange={setAway}
                 ariaLabel={`${match.away_team} score`}
-                dirty={dirty && !penDirty}
+                dirty={dirty}
               />
             </div>
           ) : (
@@ -645,64 +660,122 @@ export default function MatchCard({
         )}
       </div>
 
-      {/* Knockout penalty prediction row */}
-      {editable && knockout && (
+      {/* Knockout: collapsed penalty toggle */}
+      {editable && knockout && !penOpen && (
         <div
           style={{
             display: "flex",
-            alignItems: "center",
             justifyContent: "center",
-            gap: 10,
-            padding: "8px 18px",
+            padding: "6px 18px 10px",
             borderTop: "1px dashed var(--line)",
-            background: "color-mix(in oklab, var(--surface2) 40%, transparent)",
           }}
         >
-          <span
+          <button
+            type="button"
+            onClick={() => setPenOpen(true)}
             style={{
-              fontSize: 11,
-              fontWeight: 700,
+              padding: "4px 14px",
+              borderRadius: 999,
+              border: "1px solid var(--line)",
+              background: "var(--surface2)",
               color: "var(--muted)",
-              fontFamily: "var(--font-display)",
-              textTransform: "uppercase" as const,
-              letterSpacing: "0.05em",
-              marginRight: 4,
-            }}
-          >
-            Pens
-          </span>
-          <Stepper
-            value={penHome}
-            onChange={setPenHome}
-            ariaLabel={`${match.home_team} penalty score`}
-            dirty={penDirty}
-          />
-          <span
-            style={{
-              color: "var(--muted)",
+              fontSize: 11.5,
               fontWeight: 700,
-              fontFamily: "var(--font-mono)",
-              fontSize: 18,
-            }}
-          >
-            :
-          </span>
-          <Stepper
-            value={penAway}
-            onChange={setPenAway}
-            ariaLabel={`${match.away_team} penalty score`}
-            dirty={penDirty}
-          />
-          <span
-            style={{
-              fontSize: 10.5,
-              color: "var(--faint)",
               fontFamily: "var(--font-display)",
-              marginLeft: 4,
+              cursor: "pointer",
+              letterSpacing: "0.03em",
             }}
           >
-            optional · +1 pt
-          </span>
+            + Penalty pick · +1 pt
+          </button>
+        </div>
+      )}
+
+      {/* Knockout: expanded penalty steppers — centered under the main score */}
+      {editable && knockout && penOpen && (
+        <div
+          style={{
+            borderTop: "1px dashed var(--line)",
+            background: "color-mix(in oklab, var(--surface2) 30%, transparent)",
+            padding: "8px 18px 12px",
+          }}
+        >
+          {/* Header row */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 6,
+            }}
+          >
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--muted)",
+                fontFamily: "var(--font-display)",
+                textTransform: "uppercase" as const,
+                letterSpacing: "0.06em",
+              }}
+            >
+              Penalty pick · +1 pt
+            </span>
+            <button
+              type="button"
+              onClick={closePen}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--faint)",
+                cursor: "pointer",
+                fontSize: 13,
+                lineHeight: 1,
+                padding: "2px 4px",
+                fontFamily: "var(--font-display)",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+          {/* Steppers — use flex spacers to align with the main score center column */}
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <div style={{ flex: 1 }} />
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                minWidth: 130,
+                padding: "0 12px",
+                justifyContent: "center",
+              }}
+            >
+              <Stepper
+                value={penHome}
+                onChange={setPenHome}
+                ariaLabel={`${match.home_team} penalty score`}
+                dirty={penDirty}
+              />
+              <span
+                style={{
+                  color: "var(--muted)",
+                  fontWeight: 700,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: 18,
+                }}
+              >
+                :
+              </span>
+              <Stepper
+                value={penAway}
+                onChange={setPenAway}
+                ariaLabel={`${match.away_team} penalty score`}
+                dirty={penDirty}
+              />
+            </div>
+            <div style={{ flex: 1 }} />
+          </div>
         </div>
       )}
 
