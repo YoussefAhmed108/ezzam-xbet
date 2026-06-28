@@ -328,6 +328,18 @@ export default function MatchCard({
   const isFinished = match.status === "finished";
   const knockout = isKnockout(match.stage);
 
+  const homeNum = parseInt(home, 10);
+  const awayNum = parseInt(away, 10);
+  const isPredictedDraw = !isNaN(homeNum) && !isNaN(awayNum) && homeNum === awayNum;
+
+  // Auto-collapse pen section when predicted score is no longer a draw
+  useEffect(() => {
+    if (!isNaN(homeNum) && !isNaN(awayNum) && homeNum !== awayNum) {
+      closePen();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [home, away]);
+
   const savedHome = prediction ? String(prediction.home_score) : "";
   const savedAway = prediction ? String(prediction.away_score) : "";
   const savedPenHome = prediction?.pen_home != null ? String(prediction.pen_home) : "";
@@ -660,8 +672,8 @@ export default function MatchCard({
         )}
       </div>
 
-      {/* Knockout: collapsed penalty toggle */}
-      {editable && knockout && !penOpen && (
+      {/* Knockout: collapsed penalty toggle — only available for predicted draws */}
+      {editable && knockout && isPredictedDraw && !penOpen && (
         <div
           style={{
             display: "flex",
@@ -692,7 +704,7 @@ export default function MatchCard({
       )}
 
       {/* Knockout: expanded penalty steppers — centered under the main score */}
-      {editable && knockout && penOpen && (
+      {editable && knockout && isPredictedDraw && penOpen && (
         <div
           style={{
             borderTop: "1px dashed var(--line)",
