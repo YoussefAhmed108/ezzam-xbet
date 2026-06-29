@@ -233,6 +233,8 @@ async def score_finished_matches(db: AsyncIOMotorDatabase) -> int:
                     actual_home,
                     actual_away,
                 )
+            if pred.get("joker"):
+                new_points *= 2
             old_points = pred.get("points") if pred.get("scored") else None
             if old_points == new_points:
                 continue

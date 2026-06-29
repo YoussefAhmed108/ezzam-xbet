@@ -43,6 +43,7 @@ export interface Prediction {
   pen_away: number | null;
   points: number | null;
   scored: boolean;
+  joker: boolean;
   updated_at: string;
 }
 

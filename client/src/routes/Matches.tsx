@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMatches, useMyPredictions } from "../lib/queries";
 import MatchCard from "../components/MatchCard";
 import { formatLabel } from "../lib/format";
@@ -97,6 +97,28 @@ export default function Matches() {
   }, [predictionsQuery.data]);
 
   const matches = matchesQuery.data ?? [];
+
+  // jokerByStage: stage -> match_id of the currently selected joker (one per stage)
+  const [jokerByStage, setJokerByStage] = useState<Map<string, string>>(new Map());
+
+  // Sync from saved predictions whenever they reload
+  useEffect(() => {
+    const map = new Map<string, string>();
+    for (const m of matches) {
+      const pred = predByMatch.get(m.id);
+      if (pred?.joker && m.stage) map.set(m.stage, m.id);
+    }
+    setJokerByStage(map);
+  }, [predByMatch, matches]);
+
+  const handleJokerToggle = (matchId: string, stage: string) => {
+    setJokerByStage((prev) => {
+      const next = new Map(prev);
+      if (next.get(stage) === matchId) next.delete(stage);
+      else next.set(stage, matchId);
+      return next;
+    });
+  };
 
   const openCount = useMemo(
     () =>
@@ -300,6 +322,8 @@ export default function Matches() {
                 key={m.id}
                 match={m}
                 prediction={predByMatch.get(m.id)}
+                jokerActive={!!m.stage && jokerByStage.get(m.stage) === m.id}
+                onJokerToggle={m.stage ? () => handleJokerToggle(m.id, m.stage!) : undefined}
               />
             ))}
           </div>

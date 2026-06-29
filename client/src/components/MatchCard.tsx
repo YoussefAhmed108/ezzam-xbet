@@ -279,9 +279,13 @@ function Stepper({
 export default function MatchCard({
   match,
   prediction,
+  jokerActive = false,
+  onJokerToggle,
 }: {
   match: Match;
   prediction?: Prediction;
+  jokerActive?: boolean;
+  onJokerToggle?: () => void;
 }) {
   const submit = useSubmitPrediction();
   const [home, setHome] = useState<string>(
@@ -344,13 +348,15 @@ export default function MatchCard({
   const savedAway = prediction ? String(prediction.away_score) : "";
   const savedPenHome = prediction?.pen_home != null ? String(prediction.pen_home) : "";
   const savedPenAway = prediction?.pen_away != null ? String(prediction.pen_away) : "";
+  const savedJoker = prediction?.joker ?? false;
   const hasInput = home !== "" && away !== "";
   const dirty =
     hasInput &&
     (home !== savedHome ||
       away !== savedAway ||
       penHome !== savedPenHome ||
-      penAway !== savedPenAway);
+      penAway !== savedPenAway ||
+      jokerActive !== savedJoker);
   const penDirty = penHome !== savedPenHome || penAway !== savedPenAway;
 
   const onSave = async () => {
@@ -371,6 +377,7 @@ export default function MatchCard({
         away_score: a,
         pen_home: hasBothPens ? ph : null,
         pen_away: hasBothPens ? pa : null,
+        joker: jokerActive,
       });
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
@@ -643,6 +650,24 @@ export default function MatchCard({
                     Pens {prediction.pen_home} : {prediction.pen_away}
                   </span>
                 )}
+                {prediction.joker && (
+                  <span
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      padding: "2px 7px",
+                      borderRadius: 999,
+                      fontSize: 10.5,
+                      fontWeight: 800,
+                      background: "linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--primary) 70%, var(--yellow)))",
+                      color: "#fff",
+                      fontFamily: "var(--font-display)",
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    ⚡ 2×
+                  </span>
+                )}
                 {(isFinished || isLive) && prediction.scored && (
                   <PointsBadge prediction={prediction} />
                 )}
@@ -801,8 +826,38 @@ export default function MatchCard({
             justifyContent: "center",
             padding: "10px 18px 14px",
             borderTop: "1px solid var(--line)",
+            flexWrap: "wrap" as const,
           }}
         >
+          {knockout && (
+            <button
+              type="button"
+              onClick={onJokerToggle}
+              title="Double your points for this match (one per round)"
+              style={{
+                padding: "7px 14px",
+                borderRadius: 999,
+                border: jokerActive
+                  ? "none"
+                  : "1px solid var(--line)",
+                background: jokerActive
+                  ? "linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--primary) 70%, var(--yellow)))"
+                  : "var(--surface2)",
+                color: jokerActive ? "#fff" : "var(--muted)",
+                fontSize: 12.5,
+                fontWeight: 800,
+                fontFamily: "var(--font-display)",
+                cursor: "pointer",
+                letterSpacing: "0.04em",
+                boxShadow: jokerActive
+                  ? "0 4px 14px color-mix(in oklab, var(--primary) 40%, transparent)"
+                  : undefined,
+                transition: "all 0.15s",
+              }}
+            >
+              ⚡ 2× {jokerActive ? "JOKER ON" : "JOKER"}
+            </button>
+          )}
           <button
             onClick={onSave}
             disabled={submit.isPending || !dirty}

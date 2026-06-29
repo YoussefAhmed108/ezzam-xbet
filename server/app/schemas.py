@@ -70,6 +70,7 @@ class PredictionIn(BaseModel):
     away_score: int = Field(ge=0, le=99)
     pen_home: Optional[int] = Field(default=None, ge=0, le=99)
     pen_away: Optional[int] = Field(default=None, ge=0, le=99)
+    joker: bool = False
 
 
 class PredictionOut(BaseModel):
@@ -81,6 +82,7 @@ class PredictionOut(BaseModel):
     pen_away: Optional[int] = None
     points: Optional[int] = None
     scored: bool = False
+    joker: bool = False
     updated_at: datetime
 
 

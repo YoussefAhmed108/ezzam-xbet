@@ -79,5 +79,6 @@ def prediction_out(doc: dict) -> dict:
         "pen_away": doc.get("pen_away"),
         "points": doc.get("points"),
         "scored": doc.get("scored", False),
+        "joker": doc.get("joker", False),
         "updated_at": _as_utc(doc["updated_at"]) if doc.get("updated_at") else None,
     }
